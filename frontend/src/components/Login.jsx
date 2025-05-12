@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'
 import { useNavigate } from 'react-router-dom'
+import leaf from'../static/leaves.jpeg'
 
 
 export default function Login() {
@@ -37,14 +38,67 @@ export default function Login() {
 };
 
     return (
-    <>
-        <div>
-        <form onSubmit={handleSubmit}>
-            <input onChange={(e)=>{setUsername(e.target.value)}} type="text" name="username" value={username} />
-            <input onChange={(e)=>{setPassword(e.target.value)}}type="text" name="password" value={password} />
-            <input type="submit" value="Submit" />
-        </form>
-        </div>
-    </>
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="bg-white p-8 shadow-xl w-11/12 max-w-md rounded-2xl relative">
+        
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <img
+      src={leaf}
+      alt="Leaf"
+      className="absolute -top-4 -left-4 w-12 h-12 opacity-80 ml-3.5 mt-3.5 rounded-l-2xl"
+    />
+      <table className="w-full">
+        <tbody>
+          <tr>
+            <td colSpan="2" className="text-center py-4">
+              <h1 className="text-3xl font-bold text-gray-800">Log In</h1>
+            </td>
+          </tr>
+          <tr>
+            <td className="py-4 px-4">
+              <label htmlFor="username" className="text-gray-700 font-medium">Username:</label>
+            </td>
+            <td className="py-4 px-4">
+              <input
+                id="username"
+                onChange={(e) => setUsername(e.target.value)}
+                type="text"
+                name="username"
+                value={username}
+                className="p-2 rounded-md w-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Username"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td className="py-2 px-4">
+              <label htmlFor="password" className="text-gray-700 font-medium">Password:</label>
+            </td>
+            <td className="py-2 px-4">
+              <input
+                id="password"
+                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                name="password"
+                value={password}
+                className="p-2 rounded-md w-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Password"
+              />
+            </td>
+          </tr>
+          <tr className="">
+            <td colSpan="2" className="text-center pt-10">
+              <input
+                type="submit"
+                value="Submit"
+                className="bg-black text-white p-2 rounded-md cursor-pointer w-40 hover:bg-gray-700 transition-colors"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </div>
+</div>
   )
 }
