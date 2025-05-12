@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 export default function UserTemplate() {
   const [chatOpen, setChatOpen] = useState(false);
+  const username=localStorage.getItem('token.name')
 
   const toggleChat = () => {
     setChatOpen(!chatOpen);
@@ -45,7 +46,7 @@ export default function UserTemplate() {
                 <h3 className="text-4xl font-bold text-green-600 mb-2">95%</h3>
                 <p className="text-gray-600">Customer Satisfaction</p>
               </div>
-              <div className="bg-green-50 p-6 rounded-lg">
+              <div className="bg-gray-200 p-6 rounded-lg">
                 <h3 className="text-4xl font-bold text-green-600 mb-2">24/7</h3>
                 <p className="text-gray-600">Support Available</p>
               </div>
@@ -87,27 +88,36 @@ export default function UserTemplate() {
 
       {/* Chat Window */}
       {chatOpen && (
-        <div className="fixed bottom-16 right-5 w-80 h-96 bg-white shadow-lg rounded-lg p-4">
-          <h3 className="text-xl font-bold mb-4">Chat with us</h3>
-          <div className="flex flex-col h-full">
-            {/* Chat messages will go here */}
-            <div className="flex-grow overflow-y-auto p-2 bg-gray-100">
-              {/* Sample messages */}
-              <p className="mb-2">Agent: How can I assist you today?</p>
-              <p className="mb-2">You: I have a pest issue in my home.</p>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="text"
-                className="flex-1 p-2 border rounded-l-md"
-                placeholder="Type your message..."
-              />
-              <button className="bg-blue-600 text-white p-2 rounded-r-md">
-                Send
-              </button>
-            </div>
+  <div className="fixed bottom-16 right-5 w-80 h-96 bg-white shadow-lg rounded-lg p-4 flex flex-col">
+    <h3 className="text-xl font-bold mb-4">Chat with us</h3>
+    <div className="flex flex-col h-full bg-gray-50 rounded-md">
+      {/* Chat messages area */}
+      <div className="flex-grow overflow-y-auto p-4 bg-gray-100 rounded-t-md space-y-2">
+        {/* Sample messages */}
+        <div className="flex flex-col space-y-2">
+          <div className="text-sm text-gray-600">
+            <strong>Agent:</strong> How can I assist you today?
+          </div>
+          <div className="text-sm text-gray-900">
+            <strong>You:</strong> I have a pest issue in my home.
           </div>
         </div>
+      </div>
+
+      {/* Input and send button */}
+      <div className="flex items-center p-2 border-t border-gray-300">
+        <input
+          type="text"
+          className="flex-1 p-2 border rounded-l-md focus:outline-none"
+          placeholder="Type your message..."
+        />
+        <button className="bg-blue-600 text-white p-2 rounded-r-md hover:bg-blue-700 transition">
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+
       )}
     </>
   );

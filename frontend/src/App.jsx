@@ -3,6 +3,7 @@ import Login from './components/Login';
 // import Register from './Register';
 import UserRouter from './pages/user/UserRouter';
 import AdminRouter from './pages/admin/AdminRouter';
+import Register from './components/Register';
 // import TechnicianRouter from './pages/Technician/TechnicianRouter';
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace/>} />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register/>} />
       {/* <Route path="/register" element={<Register />} /> */}
 
       <Route path="/user/*" element={<UserRouter />} />

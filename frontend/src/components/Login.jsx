@@ -9,8 +9,16 @@ export default function Login() {
   const [username,setUsername]=useState("")
   const [password,setPassword]=useState("")
   const navigate=useNavigate()
+  const handleRedirect=(page)=>{
+    navigate(page)
+  }
+
   const handleSubmit = async (e) => {
   e.preventDefault();
+  if(username==""||password==""){
+    alert("Username or Password cannot be Empty")
+    return 1;
+  }
   try {
     const response = await axios.post('http://127.0.0.1:5000/auth/login', {
       username,
@@ -32,7 +40,7 @@ export default function Login() {
   } catch (error) {
     console.error('Login failed:', error)
     if (error.response) {
-      console.error('Error response data:', error.response.data);
+      alert( error.response.data.message);
     }
   }
 };
@@ -67,6 +75,7 @@ export default function Login() {
                 value={username}
                 className="p-2 rounded-md w-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Username"
+                required
               />
             </td>
           </tr>
@@ -83,6 +92,7 @@ export default function Login() {
                 value={password}
                 className="p-2 rounded-md w-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Password"
+                required
               />
             </td>
           </tr>
@@ -93,6 +103,16 @@ export default function Login() {
                 value="Submit"
                 className="bg-black text-white p-2 rounded-md cursor-pointer w-40 hover:bg-gray-700 transition-colors"
               />
+            </td>
+          </tr>
+          <tr>
+            <td colSpan='2' className='text-center py-4'>
+              <span 
+                className='cursor-pointer text-blue-500 hover:underline' 
+                onClick={() => handleRedirect('/register')}
+              >
+                Register
+              </span>
             </td>
           </tr>
         </tbody>

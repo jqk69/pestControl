@@ -21,7 +21,9 @@ export default function UserTemplate() {
     },[navigate])
 
     const handleLogout=(e)=>{
+        e.preventDefault()
         localStorage.removeItem('token');
+        navigate('/login');
 
     }
   return (

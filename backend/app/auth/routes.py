@@ -42,3 +42,48 @@ def login():
             cursor.close()
         if connection:
             connection.close()
+@auth_bp.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    name=data.get('name')
+    username = data.get("username")
+    password = data.get("password")
+    email=data.get('email')
+    phone=data.get('phone')
+
+    try:
+        connection = create_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        if connection == None:
+            return jsonify({"message":"Server not found"}),404
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+        if cursor.fetchone():
+            return jsonify({"message": "Username already exists"}), 409
+
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({"message": "Email already exists"}), 409
+
+        cursor.execute("SELECT * FROM users WHERE phone = %s", (phone,))
+        if cursor.fetchone():
+            return jsonify({"message": "Phone number already exists"}), 409
+
+        cursor.execute("""
+            INSERT INTO users (username, password, name, phone, email)
+            VALUES (%s, %s,%s, %s, %s)
+        """, (username, password,name, phone, email))
+        connection.commit()
+        return jsonify({"message": "Registered Successfully"}), 201
+    
+    except Exception as e:
+        # General error handling, log the error message for debugging
+        print(f"Error during login: {e}")
+        return jsonify({"message": e}), 500
+    
+    finally:
+        # Ensure the database connection is always closed
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
