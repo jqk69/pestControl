@@ -15,6 +15,9 @@ def login():
         connection = create_connection()
         cursor = connection.cursor(dictionary=True)
         
+        if connection == None:
+            return jsonify({"message":"Server not found"}),404
+
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
 
