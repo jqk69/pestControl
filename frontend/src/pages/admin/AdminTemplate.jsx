@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
-import { jwtDecode } from 'jwt-decode'
 
-export default function UserTemplate() {
+export default function AdminTemplate() {
   const navigate=useNavigate()
     const handleLogout=(e)=>{
         e.preventDefault()

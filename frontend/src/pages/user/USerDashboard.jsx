@@ -2,7 +2,6 @@ import React, { useState } from "react";
 
 export default function UserTemplate() {
   const [chatOpen, setChatOpen] = useState(false);
-  const username=localStorage.getItem('token.name')
 
   const toggleChat = () => {
     setChatOpen(!chatOpen);

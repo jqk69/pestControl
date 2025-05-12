@@ -9,15 +9,15 @@ export default function UserRouter() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    try {
+    useEffect(()=>{
+        const token=localStorage.getItem('token')
+        if(!token || typeof token !== 'string'){
+            navigate("/login")
+        }
+        try {
       const decodedToken = jwtDecode(token);
-
+      console.log(decodedToken);
+      
       if (decodedToken.role !== 'user') {
         navigate('/login');
       }
@@ -25,13 +25,13 @@ export default function UserRouter() {
       console.error('Invalid token:', error);
       navigate('/login');
     }
-  }, [token, navigate]);
+    },[navigate])
+
 
   return (
     <Routes>
       <Route path="/" element={<UserTemplate/>}>
         <Route index element={<Navigate to="dashboard" replace />} />
-
         <Route path="dashboard" element={<UserDashboard />} />
         <Route path="store" element={<UserStore />} />
       </Route>

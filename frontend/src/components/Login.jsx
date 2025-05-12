@@ -108,7 +108,7 @@ export default function Login() {
           <tr>
             <td colSpan='2' className='text-center py-4'>
               <span 
-                className='cursor-pointer text-blue-500 hover:underline' 
+                className='cursor-pointer text-blue-500 hover:underline text-center' 
                 onClick={() => handleRedirect('/register')}
               >
                 Register
