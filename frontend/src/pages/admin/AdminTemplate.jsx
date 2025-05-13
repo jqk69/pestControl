@@ -3,11 +3,15 @@ import { Outlet, useNavigate } from 'react-router-dom'
 
 export default function AdminTemplate() {
   const navigate=useNavigate()
+  const username=sessionStorage.getItem('username')
     const handleLogout=(e)=>{
         e.preventDefault()
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         navigate('/login');
 
+    }
+    const handleRedirect=(path)=>{
+      navigate(path)
     }
   return (
     <>
@@ -18,10 +22,10 @@ export default function AdminTemplate() {
         
         <h2 className="text-lg font-semibold mb-4">Dashboard</h2>
         <nav className="space-y-3">
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Home</a>
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Profile</a>
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Services</a>
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Store</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={(e)=>{e.preventDefault();handleRedirect('dashboard')}}>Home</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={(e)=>{e.preventDefault();handleRedirect('profile')}}>Profile</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={(e)=>{e.preventDefault();handleRedirect('services')}}>Services</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e)=>{e.preventDefault();handleRedirect('store')}}>Store</a>
           <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={handleLogout}>Log Out</a>
         </nav>
       </div>
@@ -37,7 +41,11 @@ export default function AdminTemplate() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <h2 className="text-xl font-semibold text-gray-800">Dashboard</h2>
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-2xl font-bold">
+         Admin Dashboard
+        </div>
+      </div>
     </div>
     
     <div className="flex items-center space-x-6">
@@ -63,7 +71,7 @@ export default function AdminTemplate() {
                     src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
                     alt="User profile"
                 />
-                <span className="ml-2 text-gray-700">Username</span>
+                <span className="ml-2 text-gray-700">{username}</span>
                 <svg className="ml-1 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>

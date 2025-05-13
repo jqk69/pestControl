@@ -24,9 +24,8 @@ export default function Login() {
       username,
       password,
     });
-    console.log(response.data.token);
     const token = response.data.token;
-    localStorage.setItem('token', token);
+    sessionStorage.setItem('token', token);
 
     const decodedToken = jwtDecode(token);
     const role = decodedToken.role;

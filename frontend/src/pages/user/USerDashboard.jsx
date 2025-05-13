@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 export default function UserTemplate() {
   const [chatOpen, setChatOpen] = useState(false);
+  const username=sessionStorage.getItem('username')
 
   const toggleChat = () => {
     setChatOpen(!chatOpen);
@@ -12,7 +13,7 @@ export default function UserTemplate() {
       <main className="flex-1 overflow-y-auto p-6">
         {/* Welcome Section */}
         <div className="mb-7">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Username,</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome {username},</h1>
           <p className="text-lg text-gray-600">to your one stop solution for all pest related problems</p>
         </div>
 

@@ -3,10 +3,11 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { jwtDecode } from 'jwt-decode'
 
 export default function UserTemplate() {
+  const username=sessionStorage.getItem('username')
   const navigate=useNavigate()
     const handleLogout=(e)=>{
         e.preventDefault()
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         navigate('/login');
 
     }
@@ -64,7 +65,7 @@ export default function UserTemplate() {
                     src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
                     alt="User profile"
                 />
-                <span className="ml-2 text-gray-700">Username</span>
+                <span className="ml-2 text-gray-700">{username}</span>
                 <svg className="ml-1 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>

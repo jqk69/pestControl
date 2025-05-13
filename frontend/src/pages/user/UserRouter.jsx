@@ -7,21 +7,23 @@ import UserStore from './UserStore';
 
 export default function UserRouter() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
 
     useEffect(()=>{
-        const token=localStorage.getItem('token')
+        const token=sessionStorage.getItem('token')
         if(!token || typeof token !== 'string'){
+            sessionStorage.removeItem('token')
             navigate("/login")
         }
         try {
       const decodedToken = jwtDecode(token);
-      console.log(decodedToken);
+      sessionStorage.setItem('username',decodedToken.name)
       
       if (decodedToken.role !== 'user') {
+        sessionStorage.removeItem('token')
         navigate('/login');
       }
     } catch (error) {
+      sessionStorage.removeItem('token')
       console.error('Invalid token:', error);
       navigate('/login');
     }
