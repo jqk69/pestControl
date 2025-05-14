@@ -3,3 +3,5 @@ flask-cors
 PyJWT
 mysql-connector-python
 python-dotenv
+Pillow
+werkzeug
