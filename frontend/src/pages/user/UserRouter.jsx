@@ -1,9 +1,11 @@
 import { Routes, Route, useNavigate ,Navigate} from 'react-router-dom';
-import UserDashboard from './UserDashboard';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect } from 'react';
 import UserTemplate from './UserTemplate';
 import UserStore from './UserStore';
+import UserService from './UserService';
+import UserDashboard from './USerDashboard';
+import UserServiceDetail from './UserServiceDetail';
 
 export default function UserRouter() {
   const navigate = useNavigate();
@@ -34,8 +36,10 @@ export default function UserRouter() {
     <Routes>
       <Route path="/" element={<UserTemplate/>}>
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<UserDashboard />} />
+        <Route path="dashboard" element={<UserDashboard/>} />
         <Route path="store" element={<UserStore />} />
+        <Route path="services" element={<UserService/>}/>
+        <Route path="services/:id" element={<UserServiceDetail/>}/>
       </Route>
     </Routes>
   );

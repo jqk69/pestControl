@@ -11,6 +11,10 @@ export default function UserTemplate() {
         navigate('/login');
 
     }
+    const handleRedirect=(e,path)=>{
+      e.preventDefault()
+      navigate(`/user/${path}`)
+    }
   return (
     <>
         
@@ -20,16 +24,16 @@ export default function UserTemplate() {
         
         <h2 className="text-lg font-semibold mb-4">Dashboard</h2>
         <nav className="space-y-3">
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Home</a>
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Profile</a>
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Services</a>
-          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition">Store</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={(e)=>{handleRedirect(e,'dashboard')}}>Home</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={(e)=>{handleRedirect(e,'profile')}}>Profile</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={(e)=>{handleRedirect(e,'services')}}>Services</a>
+          <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={(e)=>{handleRedirect(e,'store')}}>Store</a>
           <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition"onClick={handleLogout}>Log Out</a>
         </nav>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-6 bg-white">
         {/* Top Navbar */}
         <header className="bg-white shadow-sm">
   <div className="flex items-center justify-between px-6 py-4">
@@ -39,15 +43,15 @@ export default function UserTemplate() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <h2 className="text-xl font-semibold text-gray-800">Dashboard</h2>
+      <h2 className="text-xl font-semibold text-gray-800" onClick={(e)=>{handleRedirect(e,'dashboard')}}>Dashboard</h2>
     </div>
     
     <div className="flex items-center space-x-6">
       {/* New Navigation Links */}
       <div className="flex space-x-6 text-gray-700 font-medium">
-        <a href="#" className="hover:text-gray-900">Store</a>
-        <a href="#" className="hover:text-gray-900">Services</a>
-        <a href="#" className="hover:text-gray-900">Profile</a>
+        <a href="#" className="hover:text-gray-900"onClick={(e)=>{handleRedirect(e,'store')}}>Store</a>
+        <a href="#" className="hover:text-gray-900"onClick={(e)=>{handleRedirect(e,'services')}}>Services</a>
+        <a href="#" className="hover:text-gray-900"onClick={(e)=>{handleRedirect(e,'profile')}}>Profile</a>
       </div>
 
       {/* Existing Icons */}

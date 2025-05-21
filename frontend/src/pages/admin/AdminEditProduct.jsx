@@ -1,6 +1,8 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'
 
 export default function AdminEditProduct() {
   const { productId } = useParams();
@@ -12,7 +14,8 @@ export default function AdminEditProduct() {
     description: '',
     price: '',
     inventory_amount: '',
-    image_path: ''
+    image_path: '',
+    category: ''
   });
   const [imageFile, setImageFile] = useState(null);
 
@@ -43,7 +46,6 @@ export default function AdminEditProduct() {
     if (file) {
       setImageFile(file);
 
-      // Create a temporary URL for the image preview
       const newImageURL = URL.createObjectURL(file);
       setProduct((prev) => ({ ...prev, image_path: newImageURL }));
     }
@@ -58,6 +60,7 @@ export default function AdminEditProduct() {
       formData.append('description', product.description);
       formData.append('price', product.price);
       formData.append('inventory_amount', product.inventory_amount);
+      formData.append('category', product.category);
       if (imageFile) {
         formData.append('image', imageFile);
       }
@@ -74,7 +77,33 @@ export default function AdminEditProduct() {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update product');
     }
+    
   };
+  const handleDelete = async (e) => {
+  e.preventDefault();
+   const token = sessionStorage.getItem('token');
+  const confirmDelete = window.confirm("Are you sure you want to delete this product?");
+  if (!confirmDelete) return;
+
+  try {
+    const response = await axios.delete(`http://127.0.0.1:5000/admin/store/delete_product/${productId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (response.status === 200) {
+      toast.success("Product deleted successfully!");
+      navigate('/admin/store');
+
+    } else {
+      toast.error("Failed to delete product. Try again.");
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error("Error deleting product.");
+  }
+}
 
   return (
     <div className="flex flex-col w-full h-full p-10 bg-white shadow rounded-lg">
@@ -84,7 +113,6 @@ export default function AdminEditProduct() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         {/* Left side form fields */}
         <div className="flex flex-col space-y-6">
-          {/* Product Name */}
           <div className="flex flex-col">
             <label className="mb-2 font-medium text-gray-700">Product Name</label>
             <input
@@ -98,7 +126,6 @@ export default function AdminEditProduct() {
             />
           </div>
 
-          {/* Price */}
           <div className="flex flex-col">
             <label className="mb-2 font-medium text-gray-700">Price</label>
             <input
@@ -112,7 +139,6 @@ export default function AdminEditProduct() {
             />
           </div>
 
-          {/* Inventory Amount */}
           <div className="flex flex-col">
             <label className="mb-2 font-medium text-gray-700">Inventory Amount</label>
             <input
@@ -123,9 +149,21 @@ export default function AdminEditProduct() {
               className="border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter inventory amount"
             />
+        </div>
+          <div className="flex flex-col">
+            <label className="mb-2 font-medium text-gray-700">Category</label>
+            <select
+              name="category"
+              value={product.category || 'normal'} // Defaults to 'normal' if empty
+              onChange={handleChange}
+              className="border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="normal">Normal</option>
+              <option value="sustainable">Sustainable</option>
+            </select>
           </div>
 
-          {/* Description */}
           <div className="flex flex-col">
             <label className="mb-2 font-medium text-gray-700">Description</label>
             <textarea
@@ -140,14 +178,15 @@ export default function AdminEditProduct() {
           </div>
         </div>
 
-        {/* Right side: Image and File Input */}
+        {/* Right side: Image Preview and Upload */}
         <div className="flex flex-col justify-between">
           <div className="flex flex-col">
-            <label className="mb-2 font-medium text-gray-700">Product Image
-            </label>
+            <label className="mb-2 font-medium text-gray-700">Product Image</label>
             {product.image_path && (
               <img
-                src={`http://127.0.0.1:5000/static/products/${product.image_path}`}
+                src={product.image_path.startsWith('blob:')
+                  ? product.image_path
+                  : `http://127.0.0.1:5000/static/products/${product.image_path}`}
                 alt="Product"
                 className="max-w-xs h-auto mb-4 border rounded-md shadow-sm"
               />
@@ -166,13 +205,22 @@ export default function AdminEditProduct() {
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="md:col-span-2 mt-4">
+        <div className="md:col-span-1 mt-4">
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
             Save Changes
           </button>
+        </div>
+        <div className="md:col-span-1 mt-4">
+          <button
+            type="button"
+            className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition"
+            onClick={handleDelete}
+          >
+            Delete Product
+          </button>
+
         </div>
       </form>
     </div>

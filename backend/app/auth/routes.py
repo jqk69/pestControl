@@ -21,9 +21,10 @@ def login():
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
 
-        if user and user["password"] == password:  # Make sure to hash and compare passwords in a real system
+        if user and user["password"] == password:  
+            sub=str(user['id'])
             token = jwt.encode({
-                'sub': user['id'],
+                'sub': sub,
                 'role': user['role'],
                 'name': user['username']
             }, current_app.config['SECRET_KEY'], algorithm='HS256')

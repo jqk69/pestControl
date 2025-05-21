@@ -1,9 +1,15 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function UserTemplate() {
+export default function UserDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const username=sessionStorage.getItem('username')
+  const navigate=useNavigate()
 
+  const handleNavigate=(e,path)=>{
+    e.preventDefault()
+    navigate(`/user/${path}`)
+  }
   const toggleChat = () => {
     setChatOpen(!chatOpen);
   };
@@ -27,7 +33,7 @@ export default function UserTemplate() {
           </p>
 
           <div className="flex flex-wrap gap-4 pt-6 justify-end-safe">
-            <button className="bg-black hover:bg-gray-700 text-white font-medium py-2 px-9 mx-6 rounded-2xl transition h-20">
+            <button className="bg-black hover:bg-gray-700 text-white font-medium py-2 px-9 mx-6 rounded-2xl transition h-20" onClick={(e)=>handleNavigate(e,'services')}>
               Book a service →
             </button>
           </div>

@@ -8,6 +8,9 @@ import AdminServices from './AdminServices'
 import AdminProfile from './AdminProfile'
 import AdminUserProfile from './AdminUserProfile'
 import AdminEditProduct from './AdminEditProduct'
+import AdminAddProduct from './AdminAddProduct'
+import AdminAddService from './AdminAddService'
+import AdminEditService from './AdminEditService'
 
 
 export default function AdminRouter() {
@@ -41,9 +44,12 @@ export default function AdminRouter() {
           <Route path='dashboard' element={<AdminDashboard/>}></Route>
           <Route path='store' element={<AdminStore/>}></Route>
           <Route path='services' element={<AdminServices/>}></Route>
+          <Route path='services/add_service' element={<AdminAddService/>}></Route>
           <Route path='profile' element={<AdminProfile/>}></Route>
           <Route path="dashboard/users/:userId" element={<AdminUserProfile/>} />
           <Route path="store/edit_product/:productId" element={<AdminEditProduct/>} />
+          <Route path="store/add_product" element={<AdminAddProduct/>} />
+          <Route path="services/edit_service/:id" element={<AdminEditService/>}/>
         </Route>
     </Routes>
     </>

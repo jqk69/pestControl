@@ -15,7 +15,6 @@ export default function AdminStore() {
         params: { category: activeTab }
       });
       const fetchedProducts = response.data?.items || [];
-       console.log(fetchedProducts); 
       setProducts(fetchedProducts);
       setFilteredProducts(fetchedProducts);
     } catch (error) {
@@ -67,7 +66,7 @@ export default function AdminStore() {
           <button onClick={() => setActiveTab('normal')} className={`px-4 py-2 rounded-lg ${activeTab === 'normal' ? 'bg-indigo-600 text-white' : 'bg-gray-200'}`}>Normal Store</button>
           <button onClick={() => setActiveTab('sustainable')} className={`px-4 py-2 rounded-lg ${activeTab === 'sustainable' ? 'bg-indigo-600 text-white' : 'bg-gray-200'}`}>Sustainable Solutions</button>
         </div>
-        <button onClick={() => navigate('add-product')} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">+ Add Item</button>
+        <button onClick={() => navigate('add_product')} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">+ Add Item</button>
       </div>
 
       {/* Products Grid */}

@@ -1,25 +1,27 @@
-import {BrowserRouter ,Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';  // ✅ Import ToastContainer
+import 'react-toastify/dist/ReactToastify.css';  // ✅ Import Toast CSS
+
 import Login from './components/Login';
-// import Register from './Register';
+import Register from './components/Register';
 import UserRouter from './pages/user/UserRouter';
 import AdminRouter from './pages/admin/AdminRouter';
-import Register from './components/Register';
 // import TechnicianRouter from './pages/Technician/TechnicianRouter';
 
 export default function App() {
   return (
     <BrowserRouter>
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" replace/>} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register/>} />
-      {/* <Route path="/register" element={<Register />} /> */}
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      <Route path="/user/*" element={<UserRouter />} />
-      <Route path="/admin/*" element={<AdminRouter />} />
-      {/* <Route path="/technician/*" element={<TechnicianRouter />} /> */}
-    </Routes>
+        <Route path="/user/*" element={<UserRouter />} />
+        <Route path="/admin/*" element={<AdminRouter />} />
+        {/* <Route path="/technician/*" element={<TechnicianRouter />} /> */}
+      </Routes>
+
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
     </BrowserRouter>
-    
   );
 }
