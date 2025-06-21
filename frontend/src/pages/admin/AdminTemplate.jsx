@@ -7,15 +7,21 @@ export default function AdminTemplate() {
   const username = sessionStorage.getItem('username')
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
+  const [storeOpen, setStoreOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
+
+  const toggleStore = () => setStoreOpen(!storeOpen);
+  const toggleServices = () => setServicesOpen(!servicesOpen);
+
+  const handleRedirect = (e, path) => {
+    e.preventDefault();
+    navigate(path);
+  };
 
   const handleLogout = (e) => {
     e.preventDefault()
     sessionStorage.removeItem('token');
     navigate('/login');
-  }
-
-  const handleRedirect = (path) => {
-    navigate(path)
   }
 
   const toggleNotifications = () => {
@@ -55,13 +61,93 @@ export default function AdminTemplate() {
         <div className="w-64 bg-white text-black p-6 font-bold">
           <h1 className="font-bold mb-8 mt-5 text-5xl ">Pestilee</h1>
           <h2 className="text-lg font-semibold mb-4">Dashboard</h2>
-          <nav className="space-y-3">
-            <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e) => { e.preventDefault(); handleRedirect('dashboard') }}>Home</a>
-            <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e) => { e.preventDefault(); handleRedirect('profile') }}>Profile</a>
-            <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e) => { e.preventDefault(); handleRedirect('services') }}>Services</a>
-            <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e) => { e.preventDefault(); handleRedirect('store') }}>Store</a>
-            <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={handleLogout}>Log Out</a>
-          </nav>
+            <nav className="space-y-3">
+              <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e) => handleRedirect(e, 'dashboard')}>Home</a>
+              <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e) => handleRedirect(e, 'profile')}>Profile</a>
+              <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={(e) => handleRedirect(e, 'leave-management')}>Leave Management</a>
+              {/* Services Dropdown */}
+              <div className="relative">
+                <a
+                  href="#"
+                  className={`flex items-center justify-between py-2 px-3 rounded hover:bg-gray-100 transition ${servicesOpen ? 'bg-gray-100' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleServices();
+                  }}
+                >
+                  Services
+                  <svg
+                    className={`w-4 h-4 ml-2 transition-transform ${servicesOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </a>
+                {servicesOpen && (
+                  <div className="ml-4 mt-1 space-y-2">
+                    <a
+                      href="#"
+                      className="block py-2 px-3 rounded hover:bg-gray-100 transition text-sm font-medium"
+                      onClick={(e) => handleRedirect(e, 'services')}
+                    >
+                      Manage Services
+                    </a>
+                    <a
+                      href="#"
+                      className="block py-2 px-3 rounded hover:bg-gray-100 transition text-sm font-medium"
+                      onClick={(e) => handleRedirect(e, 'services/requests-history')}
+                    >
+                      Service History
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Store Dropdown */}
+              <div className="relative">
+                <a
+                  href="#"
+                  className={`flex items-center justify-between py-2 px-3 rounded hover:bg-gray-100 transition ${storeOpen ? 'bg-gray-100' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleStore();
+                  }}
+                >
+                  Store
+                  <svg
+                    className={`w-4 h-4 ml-2 transition-transform ${storeOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </a>
+                {storeOpen && (
+                  <div className="ml-4 mt-1 space-y-2">
+                    <a
+                      href="#"
+                      className="block py-2 px-3 rounded hover:bg-gray-100 transition text-sm font-medium"
+                      onClick={(e) => handleRedirect(e, 'store')}
+                    >
+                      Manage Store
+                    </a>
+                    <a
+                      href="#"
+                      className="block py-2 px-3 rounded hover:bg-gray-100 transition text-sm font-medium"
+                      onClick={(e) => handleRedirect(e, 'store/orders')}
+                    >
+                      Orders
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <a href="#" className="block py-2 px-3 rounded hover:bg-gray-100 transition" onClick={handleLogout}>Log Out</a>
+            </nav>
+
         </div>
 
         <div className="flex-1 flex flex-col overflow-auto max-h-screen">

@@ -18,6 +18,7 @@ export default function AdminServices() {
         withCredentials: true
       });
       setServices(response.data.services || []);
+      
     } catch (error) {
       console.error("Failed to fetch services:", error);
       toast.error(error.response?.data?.message || "Failed to fetch services");
@@ -110,6 +111,7 @@ export default function AdminServices() {
                         <thead>
                           <tr className="bg-gray-900 text-white">
                             <th className="py-3 px-4 rounded-tl-md">Service Name</th>
+                            <th className="py-3 px-4">Pest Type</th>
                             <th className="py-3 px-4 rounded-tr-md">Actions</th>
                           </tr>
                         </thead>
@@ -123,6 +125,9 @@ export default function AdminServices() {
                             >
                               <td className="py-3 px-4 font-medium text-gray-900">
                                 {service.name}
+                              </td>
+                              <td className="py-3 px-4 text-gray-800 capitalize">
+                                {service.pest_type || "N/A"}
                               </td>
                               <td className="py-3 px-4 space-x-5">
                                 <button
@@ -142,6 +147,7 @@ export default function AdminServices() {
                             </tr>
                           ))}
                         </tbody>
+
                       </table>
                     </div>
                   ))}

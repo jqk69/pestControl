@@ -5,16 +5,14 @@ from app.admin.routes import admin_bp
 from app.images.routes import image_bp
 from app.notifications.routes import notifications_bp
 from app.user.routes import user_bp
+from app.payment.routes import payment_bp
+from app.technician.routes import tech_bp
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
 def create_app():
-
-    import os
-    from dotenv import load_dotenv
-    load_dotenv()
 
     app=Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -24,7 +22,8 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(image_bp)
     app.register_blueprint(notifications_bp)
-
+    app.register_blueprint(payment_bp)
+    app.register_blueprint(tech_bp)
     app.register_blueprint(user_bp)
     return app
 

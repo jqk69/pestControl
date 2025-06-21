@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>All-in-One Leaflet Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+  <style>
+    #map { height: 90vh; }
+    #input-container {
+      padding: 10px;
+      background-color: #f8f8f8;
+    }
+    #input-container button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="input-container">
+  <label>Latitude: <input type="text" id="lat-input" /></label>
+  <label>Longitude: <input type="text" id="lng-input" /></label>
+  <button onclick="addMarkerFromInput()">Add Marker</button>
+  <button onclick="removeLastMarker()">Remove Last Marker</button>
+</div>
+
+<div id="map"></div>
+
+<!-- JS Libraries -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+
+<script>
+  const map = L.map('map').setView([20.5937, 78.9629], 5);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  const markers = [];
+  const radiusMeters = 500;
+  let userLocation = null;
+  let routingControl = null;
+
+  // Get current location
+  map.locate({ setView: true, maxZoom: 13 });
+  map.on('locationfound', function(e) {
+    userLocation = e.latlng;
+    L.marker(userLocation).addTo(map).bindPopup("You are here").openPopup();
+  });
+
+  map.on('locationerror', function() {
+    alert("Unable to access your location.");
+  });
+
+  function addMarker(lat, lng) {
+    const index = markers.length;
+    const marker = L.marker([lat, lng]).addTo(map)
+      .bindPopup(`Lat: ${lat.toFixed(5)}<br>Lng: ${lng.toFixed(5)}<br><button onclick="removeThisMarker(${index})">Remove</button>`)
+      .openPopup();
+
+    markers.push({ lat, lng, marker });
+    checkNearbyMarkers(lat, lng);
+  }
+
+  function checkNearbyMarkers(lat, lng) {
+    let count = 0;
+    markers.forEach(m => {
+      const dist = map.distance([lat, lng], [m.lat, m.lng]);
+      if (dist > 0 && dist <= radiusMeters) count++;
+    });
+
+    if (count >= 2) {
+      alert(`There are ${count} other markers within ${radiusMeters} meters of this one!`);
+    }
+  }
+
+  function addMarkerFromInput() {
+    const lat = parseFloat(document.getElementById('lat-input').value);
+    const lng = parseFloat(document.getElementById('lng-input').value);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      alert("Please enter valid numeric values for latitude and longitude.");
+      return;
+    }
+
+    addMarker(lat, lng);
+    map.setView([lat, lng], 13);
+  }
+
+function removeLastMarker() {
+  if (markers.length > 0) {
+    const last = markers.pop();
+    map.removeLayer(last.marker);
+    
+    if (routingControl) {
+      map.removeControl(routingControl);
+      routingControl = null;
+    }
+  }
+}
+
+function removeThisMarker(index) {
+  const markerData = markers[index];
+  if (markerData && map.hasLayer(markerData.marker)) {
+    map.removeLayer(markerData.marker);
+    markers.splice(index, 1);
+
+    if (routingControl) {
+      map.removeControl(routingControl);
+      routingControl = null;
+    }
+  }
+}
+
+
+  map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    addMarker(lat, lng);
+    document.getElementById('lat-input').value = lat.toFixed(5);
+    document.getElementById('lng-input').value = lng.toFixed(5);
+
+    if (userLocation) {
+      if (routingControl) map.removeControl(routingControl);
+      routingControl = L.Routing.control({
+        waypoints: [userLocation, e.latlng],
+        routeWhileDragging: false,
+        show: false,
+        createMarker: () => null
+      }).addTo(map);
+    }
+  });
+
+  // Search box (no marker on search)
+  L.Control.geocoder({
+    defaultMarkGeocode: false
+  })
+  .on('markgeocode', function(e) {
+    const latlng = e.geocode.center;
+    map.setView(latlng, 13);
+  })
+  .addTo(map);
+</script>
+
+</body>
+</html>

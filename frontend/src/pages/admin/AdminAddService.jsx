@@ -9,75 +9,91 @@ export default function AdminAddService({ onCancel }) {
   const [customServiceType, setCustomServiceType] = useState("");
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
+  const [pestType, setPestType] = useState("");
+  const [customPestType, setCustomPestType] = useState("");
   const [name, setName] = useState("");
   const [techniciansNeeded, setTechniciansNeeded] = useState(1);
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState("");
 
   const navigate = useNavigate();
 
   const serviceTypeOptions = ["Home Service", "Industrial Service", "Custom"];
   const categoryOptions = ["General", "Pest Control", "Custom"];
+  const pestTypeOptions = ["General", "Rodent", "Insect", "Mosquito", "Other"];
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  const token = sessionStorage.getItem("token");
-    console.log(token);
-    
-  if (!token) {
-    toast.error("Not authenticated. Please login.");
-    return;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const token = sessionStorage.getItem("token");
 
-  try {
-    const finalServiceType = serviceType === "Custom" ? customServiceType.trim() : serviceType;
-    const finalCategory = category === "Custom" ? customCategory.trim() : category;
+    if (!token) {
+      toast.error("Not authenticated. Please login.");
+      return;
+    }
 
-    // Create FormData instead of JSON payload
-    const formData = new FormData();
-    formData.append("service_type", finalServiceType);
-    formData.append("category", finalCategory);
-    formData.append("name", name.trim());
-    formData.append("technicians_needed", techniciansNeeded);
-    formData.append("price", price);
-    formData.append("description", description.trim());
+    try {
+      setLoading(true);
+      const finalServiceType =
+        serviceType === "Custom" ? customServiceType.trim() : serviceType;
+      const finalCategory =
+        category === "Custom" ? customCategory.trim() : category;
+      const finalPestType =
+        pestType === "Custom" ? customPestType.trim() : pestType;
 
-    const response = await axios.post("http://127.0.0.1:5000/admin/services/add_service", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Notice: No need to manually set Content-Type for FormData
-      },
-      withCredentials: true
-    });
+      const formData = new FormData();
+      formData.append("service_type", finalServiceType);
+      formData.append("category", finalCategory);
+      formData.append("pest_type", finalPestType);
+      formData.append("name", name.trim());
+      formData.append("technicians_needed", techniciansNeeded);
+      formData.append("price", price);
+      formData.append("description", description.trim());
+      formData.append("duration_minutes", durationMinutes);
 
-    toast.success("Service added successfully!");
-    navigate("/admin/services");
+      const response = await axios.post(
+        "http://127.0.0.1:5000/admin/services/add_service",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
 
-  } catch (err) {
-    toast.error(err.response?.data?.message || "Failed to add service");
-  }
-};
-
+      toast.success("Service added successfully!");
+      navigate("/admin/services");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add service");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
       <ToastContainer />
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-9xl max-h-max m-5 p-8 bg-white rounded shadow-md flex flex-col mr-2"
+        className="max-w-4xl mx-auto p-8 bg-white rounded-xl shadow-lg space-y-8"
         style={{ minHeight: "600px" }}
       >
-        <h2 className="text-3xl font-bold mb-8">Add New Service</h2>
+        <h2 className="text-3xl font-extrabold text-indigo-700 mb-6">
+          Add New Service
+        </h2>
 
-        {/* Row 1: 3 inputs side-by-side */}
-        <div className="grid grid-cols-3 gap-6 mb-6 flex-grow-0">
+        {/* Service Type & Category */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block font-semibold mb-2">Service Type</label>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Service Type
+            </label>
             <select
               value={serviceType}
               onChange={(e) => setServiceType(e.target.value)}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
               disabled={loading}
             >
@@ -94,25 +110,29 @@ const handleSubmit = async (e) => {
 
           {serviceType === "Custom" && (
             <div>
-              <label className="block font-semibold mb-2">Custom Service Type</label>
+              <label className="block mb-2 font-semibold text-gray-700">
+                Custom Service Type
+              </label>
               <input
                 type="text"
                 value={customServiceType}
                 onChange={(e) => setCustomServiceType(e.target.value)}
                 placeholder="Enter custom service type"
-                className="w-full border rounded px-3 py-2"
-                required={serviceType === "Custom"}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
                 disabled={loading}
               />
             </div>
           )}
 
           <div>
-            <label className="block font-semibold mb-2">Category</label>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Category
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
               disabled={loading}
             >
@@ -128,77 +148,119 @@ const handleSubmit = async (e) => {
           </div>
         </div>
 
-        {/* Row 2: Left side stacked 3 inputs, right side textarea (fills height) */}
-        <div className="flex gap-6 flex-grow mb-6" style={{ minHeight: "300px" }}>
-          {/* Left side: stacked three inputs */}
-          <div className="flex flex-col gap-6 w-1/2">
-            <div>
-              <label className="block font-semibold mb-2">Service Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Service name"
-                className="w-full border rounded px-3 py-2"
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-2">Technicians Needed</label>
-              <input
-                type="number"
-                min={1}
-                value={techniciansNeeded}
-                onChange={(e) => setTechniciansNeeded(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-2">Price (₹)</label>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="Price"
-                className="w-full border rounded px-3 py-2"
-                required
-                disabled={loading}
-              />
-            </div>
+        {/* Duration, Technicians, Price */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Duration (minutes)
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(e.target.value)}
+              placeholder="Duration in minutes"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+              disabled={loading}
+            />
           </div>
 
-          {/* Right side: textarea */}
-          <div className="w-1/2 flex flex-col">
-            <label className="block font-semibold mb-2">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detailed description"
-              className="w-full border rounded px-3 py-2 flex-grow resize-none"
+          <div>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Technicians Needed
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={techniciansNeeded}
+              onChange={(e) => setTechniciansNeeded(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Price (₹)
+            </label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="Price"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
               disabled={loading}
             />
           </div>
         </div>
 
-        {/* Row 3: Buttons */}
-        <div className="flex justify-end space-x-6 flex-grow-0">
+        {/* Pest Type */}
+        <div className="max-w-sm">
+          <label className="block mb-2 font-semibold text-gray-700">Pest Type</label>
+          <select
+            value={pestType}
+            onChange={(e) => setPestType(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            required
+            disabled={loading}
+          >
+            <option value="" disabled>
+              Select pest type
+            </option>
+            {pestTypeOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Service Name & Description */}
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex-1">
+            <label className="block mb-2 font-semibold text-gray-700">Service Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Service name"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="flex-1 flex flex-col">
+            <label className="block mb-2 font-semibold text-gray-700">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Detailed description"
+              className="w-full h-32 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              required
+              disabled={loading}
+            />
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-end space-x-4">
           <button
             type="button"
             onClick={onCancel}
-            className="px-8 py-3 rounded bg-gray-300 hover:bg-gray-400 transition"
+            className="px-6 py-3 rounded-lg bg-gray-300 hover:bg-gray-400 transition font-semibold"
             disabled={loading}
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-8 py-3 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
+            className="px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition font-semibold"
             disabled={loading}
           >
             {loading ? "Saving..." : "Save Service"}

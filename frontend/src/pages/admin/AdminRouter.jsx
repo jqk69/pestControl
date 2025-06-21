@@ -11,6 +11,10 @@ import AdminEditProduct from './AdminEditProduct'
 import AdminAddProduct from './AdminAddProduct'
 import AdminAddService from './AdminAddService'
 import AdminEditService from './AdminEditService'
+import AdminOrders from './AdminOrders'
+import AdminCustomReq from './AdminCustomReq'
+import AdminReports from './AdminReports'
+import AdminLeaveManagement from './AdminLeaveManagement'
 
 
 export default function AdminRouter() {
@@ -50,6 +54,10 @@ export default function AdminRouter() {
           <Route path="store/edit_product/:productId" element={<AdminEditProduct/>} />
           <Route path="store/add_product" element={<AdminAddProduct/>} />
           <Route path="services/edit_service/:id" element={<AdminEditService/>}/>
+          <Route path='store/orders' element={<AdminOrders/>}/>
+          <Route path="services/requests-history" element={<AdminCustomReq/>}/>
+          <Route path='reports' element={<AdminReports/>}/>
+          <Route path='leave-management' element={<AdminLeaveManagement/>}/>
         </Route>
     </Routes>
     </>
