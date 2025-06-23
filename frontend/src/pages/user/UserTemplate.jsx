@@ -18,7 +18,6 @@ import {
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { GlassCard } from '../../components/ui/GlassCard';
-import { AnimatedButton } from '../../components/ui/AnimatedButton';
 
 export default function UserTemplate() {
   const username = sessionStorage.getItem('username');
@@ -168,12 +167,13 @@ export default function UserTemplate() {
         </motion.button>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed positioning for mobile, relative for desktop */}
       <motion.div
         variants={sidebarVariants}
         animate={mobileMenuOpen ? 'open' : 'closed'}
         className="fixed inset-y-0 left-0 w-80 lg:relative lg:translate-x-0 z-40 lg:block"
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        style={{ display: 'block' }} // Force display
       >
         <GlassCard className="h-full p-6 rounded-none lg:rounded-r-3xl border-l-0">
           <div className="flex items-center justify-between mb-8 mt-5">
@@ -321,7 +321,7 @@ export default function UserTemplate() {
       </motion.div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto lg:ml-0">
+      <div className="flex-1 overflow-y-auto">
         {/* Top Navbar */}
         <header className="sticky top-0 z-30">
           <GlassCard className="m-4 p-4 rounded-2xl">
