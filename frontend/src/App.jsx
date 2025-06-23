@@ -6,7 +6,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import UserRouter from './pages/user/UserRouter';
 import AdminRouter from './pages/admin/AdminRouter';
-import Home from './home';
+import Home from './Home.jsx';
 import TechnicianRouter from './pages/technicican/TechnicianRouter'
 
 export default function App() {
