@@ -22,20 +22,46 @@ export default function AdminStore() {
   const [activeTab, setActiveTab] = useState('normal');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('Fetching products for category:', activeTab);
+      
       const response = await axios.get(`http://127.0.0.1:5000/admin/store`, {
-        params: { category: activeTab }
+        params: { category: activeTab },
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
       });
-      const fetchedProducts = response.data?.items || [];
+
+      console.log('Products response:', response.data);
+
+      let fetchedProducts = [];
+      if (response.data?.items) {
+        fetchedProducts = response.data.items;
+      } else if (response.data?.products) {
+        fetchedProducts = response.data.products;
+      } else if (Array.isArray(response.data)) {
+        fetchedProducts = response.data;
+      } else {
+        console.error('Unexpected response format:', response.data);
+        setError('Invalid response format from server');
+        return;
+      }
+
       setProducts(fetchedProducts);
       setFilteredProducts(fetchedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to fetch products');
       setProducts([]);
+      setFilteredProducts([]);
     } finally {
       setLoading(false);
     }
@@ -44,8 +70,8 @@ export default function AdminStore() {
   const filterProducts = () => {
     if (searchTerm) {
       const filtered = products.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredProducts(filtered);
     } else {
@@ -99,6 +125,25 @@ export default function AdminStore() {
           <div className="w-20 h-20 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white text-xl">Loading store products...</p>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 flex items-center justify-center relative overflow-hidden">
+        <FloatingOrbs />
+        <GlassCard className="text-center p-8 max-w-md mx-auto">
+          <ArchiveBoxIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-4">Error Loading Products</h2>
+          <p className="text-gray-300 mb-6">{error}</p>
+          <AnimatedButton
+            variant="primary"
+            onClick={() => fetchProducts()}
+          >
+            Try Again
+          </AnimatedButton>
+        </GlassCard>
       </div>
     );
   }
@@ -219,9 +264,12 @@ export default function AdminStore() {
                     <div className="relative h-48 overflow-hidden">
                       <motion.img
                         src={`http://127.0.0.1:5000/static/products/${product.image_path}`}
-                        alt={product.name}
+                        alt={product.name || 'Product'}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         whileHover={{ scale: 1.1 }}
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       
@@ -238,10 +286,10 @@ export default function AdminStore() {
                     {/* Product Info */}
                     <div className="p-6 flex-1 flex flex-col">
                       <h3 className="font-bold text-lg mb-2 text-white group-hover:text-blue-400 transition-colors">
-                        {product.name}
+                        {product.name || 'Unnamed Product'}
                       </h3>
                       <p className="text-gray-400 text-sm mb-4 flex-1 line-clamp-3">
-                        {product.description}
+                        {product.description || 'No description available'}
                       </p>
 
                       {/* Price and Inventory */}
@@ -251,7 +299,7 @@ export default function AdminStore() {
                             <CurrencyDollarIcon className="w-4 h-4 text-blue-400" />
                             <span>Price</span>
                           </div>
-                          <span className="text-xl font-bold text-blue-400">₹{product.price}</span>
+                          <span className="text-xl font-bold text-blue-400">₹{product.price || 0}</span>
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -259,7 +307,7 @@ export default function AdminStore() {
                             <ArchiveBoxIcon className="w-4 h-4 text-blue-400" />
                             <span>Stock</span>
                           </div>
-                          <span className="text-white font-medium">{product.inventory_amount}</span>
+                          <span className="text-white font-medium">{product.inventory_amount || 0}</span>
                         </div>
                       </div>
 

@@ -45,23 +45,45 @@ const UserService = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/user/services', {
-          headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
-        });
-        if (response.data.success) {
-          setServices(response.data.services);
-        } else {
-          setError('Failed to load services');
+        setLoading(true);
+        setError(null);
+        
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          setError('Please login to view services');
+          navigate('/login');
+          return;
         }
-      } catch {
-        setError('Error fetching services');
+
+        console.log('Fetching services...');
+        
+        const response = await axios.get('http://127.0.0.1:5000/user/services', {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        });
+
+        console.log('Services response:', response.data);
+
+        if (response.data.success && response.data.services) {
+          setServices(response.data.services);
+        } else if (Array.isArray(response.data)) {
+          setServices(response.data);
+        } else {
+          console.error('Unexpected response format:', response.data);
+          setError('Invalid response format from server');
+        }
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setError(err.response?.data?.message || err.message || 'Error fetching services');
       } finally {
         setLoading(false);
       }
     };
 
     fetchServices();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     let filtered = services;
@@ -71,18 +93,18 @@ const UserService = () => {
       const lowerSearch = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (service) =>
-          service.name.toLowerCase().includes(lowerSearch) ||
-          service.description.toLowerCase().includes(lowerSearch) ||
+          service.name?.toLowerCase().includes(lowerSearch) ||
+          service.description?.toLowerCase().includes(lowerSearch) ||
           service.pest_type?.toLowerCase().includes(lowerSearch)
       );
     }
     setFilteredServices(filtered);
   }, [services, serviceType, category, searchTerm]);
 
-  const handleBookNow = (id) => navigate(`/user/service/${id}`);
+  const handleBookNow = (id) => navigate(`/user/services/${id}`);
 
-  const serviceTypes = [...new Set(services.map((s) => s.service_type))];
-  const categories = [...new Set(services.map((s) => s.category))];
+  const serviceTypes = [...new Set(services.map((s) => s.service_type).filter(Boolean))];
+  const categories = [...new Set(services.map((s) => s.category).filter(Boolean))];
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -327,15 +349,15 @@ const UserService = () => {
                       {/* Service Header */}
                       <div className="flex justify-between items-start mb-3">
                         <h3 className="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">
-                          {service.name}
+                          {service.name || 'Unnamed Service'}
                         </h3>
                         <span className="text-xs px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
-                          {service.category}
+                          {service.category || 'General'}
                         </span>
                       </div>
 
                       <p className="text-gray-400 text-sm mb-4 flex-1 line-clamp-3">
-                        {service.description}
+                        {service.description || 'No description available'}
                       </p>
 
                       {/* Service Details */}
@@ -345,7 +367,7 @@ const UserService = () => {
                             <UserGroupIcon className="w-4 h-4 text-emerald-400" />
                             <span>Technicians</span>
                           </div>
-                          <span className="text-white font-medium">{service.technicians_needed}</span>
+                          <span className="text-white font-medium">{service.technicians_needed || 1}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-sm">
@@ -363,7 +385,7 @@ const UserService = () => {
                             <CurrencyDollarIcon className="w-4 h-4 text-emerald-400" />
                             <span>Price</span>
                           </div>
-                          <span className="text-2xl font-bold text-emerald-400">₹{service.price}</span>
+                          <span className="text-2xl font-bold text-emerald-400">₹{service.price || 0}</span>
                         </div>
                       </div>
 

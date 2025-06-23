@@ -24,6 +24,7 @@ export default function UserStore() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sortOption, setSortOption] = useState('featured');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const navigate = useNavigate();
@@ -31,19 +32,49 @@ export default function UserStore() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const token = sessionStorage.getItem('token');
+      if (!token) {
+        setError('Please login to view products');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Fetching products...');
+      
       const response = await axios.get('http://127.0.0.1:5000/user/store', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
       });
 
-      const fetched = response.data?.items || [];
-      const recommended = response.data?.recommended || [];
+      console.log('Store response:', response.data);
+
+      let fetched = [];
+      let recommended = [];
+
+      if (response.data?.items) {
+        fetched = response.data.items;
+        recommended = response.data.recommended || [];
+      } else if (response.data?.products) {
+        fetched = response.data.products;
+        recommended = response.data.recommended || [];
+      } else if (Array.isArray(response.data)) {
+        fetched = response.data;
+      } else {
+        console.error('Unexpected response format:', response.data);
+        setError('Invalid response format from server');
+        return;
+      }
 
       setProducts(fetched);
       setRecommendedProducts(recommended);
       filterProducts(fetched, searchTerm, activeCategory, sortOption, recommended);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to fetch products');
     } finally {
       setLoading(false);
     }
@@ -63,26 +94,26 @@ export default function UserStore() {
     if (search) {
       filtered = filtered.filter(
         (p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.description.toLowerCase().includes(search.toLowerCase())
+          p.name?.toLowerCase().includes(search.toLowerCase()) ||
+          p.description?.toLowerCase().includes(search.toLowerCase())
       );
     }
 
     switch (sort) {
       case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
         break;
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
         break;
       case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       case 'newest':
-        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
         break;
       default:
-        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || b.rating - a.rating);
+        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.rating || 0) - (a.rating || 0));
     }
 
     setFilteredProducts(filtered);
@@ -105,8 +136,8 @@ export default function UserStore() {
 
   const handleAddToCart = async (product) => {
     const quantity = quantities[product.id] || 1;
-    if (quantity > product.inventory_amount) {
-      alert(`Only ${product.inventory_amount} left in stock.`);
+    if (quantity > (product.inventory_amount || 0)) {
+      alert(`Only ${product.inventory_amount || 0} left in stock.`);
       return;
     }
 
@@ -144,8 +175,8 @@ export default function UserStore() {
 
   const handleBuyNow = async (product) => {
     const quantity = quantities[product.id] || 1;
-    if (quantity > product.inventory_amount) {
-      alert(`Only ${product.inventory_amount} left in stock.`);
+    if (quantity > (product.inventory_amount || 0)) {
+      alert(`Only ${product.inventory_amount || 0} left in stock.`);
       return;
     }
 
@@ -179,7 +210,7 @@ export default function UserStore() {
       {[1, 2, 3, 4, 5].map((star) => (
         <StarIcon
           key={star}
-          className={`w-4 h-4 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
+          className={`w-4 h-4 ${star <= (rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
         />
       ))}
     </div>
@@ -219,6 +250,25 @@ export default function UserStore() {
           <div className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white text-xl">Loading amazing products...</p>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center relative overflow-hidden">
+        <FloatingOrbs />
+        <GlassCard className="text-center p-8 max-w-md mx-auto">
+          <SparklesIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-4">Error Loading Products</h2>
+          <p className="text-gray-300 mb-6">{error}</p>
+          <AnimatedButton
+            variant="primary"
+            onClick={() => fetchProducts()}
+          >
+            Try Again
+          </AnimatedButton>
+        </GlassCard>
       </div>
     );
   }
@@ -379,9 +429,12 @@ export default function UserStore() {
                     <div className="relative h-48 overflow-hidden">
                       <motion.img
                         src={`http://127.0.0.1:5000/static/products/${product.image_path}`}
-                        alt={product.name}
+                        alt={product.name || 'Product'}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         whileHover={{ scale: 1.1 }}
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
@@ -389,10 +442,10 @@ export default function UserStore() {
                     {/* Product Info */}
                     <div className="p-6 flex-1 flex flex-col">
                       <h3 className="font-bold text-lg mb-2 text-white group-hover:text-emerald-400 transition-colors">
-                        {product.name}
+                        {product.name || 'Unnamed Product'}
                       </h3>
                       <p className="text-gray-400 text-sm mb-3 flex-1 line-clamp-2">
-                        {product.description}
+                        {product.description || 'No description available'}
                       </p>
                       
                       {product.rating && (
@@ -404,7 +457,7 @@ export default function UserStore() {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <span className="text-2xl font-bold text-emerald-400">
-                            ₹{product.price}
+                            ₹{product.price || 0}
                           </span>
                           {product.original_price && (
                             <span className="text-sm text-gray-500 line-through">
@@ -426,7 +479,7 @@ export default function UserStore() {
                           <input
                             type="number"
                             min="1"
-                            max={product.inventory_amount}
+                            max={product.inventory_amount || 1}
                             value={quantities[product.id] || 1}
                             onChange={(e) => handleQuantityChange(product.id, e.target.value)}
                             className="w-16 text-center bg-transparent text-white border-x border-white/20 py-2 focus:outline-none"

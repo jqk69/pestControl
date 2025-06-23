@@ -34,15 +34,36 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
       try {
         const token = sessionStorage.getItem('token');
+        if (!token) {
+          setError('No authentication token found');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Fetching users with token:', token);
+        
         const response = await axios.get('http://127.0.0.1:5000/admin/users', {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
-        setUsers(response.data.users);
-        setFilteredUsers(response.data.users);
+
+        console.log('Users response:', response.data);
+
+        if (response.data && response.data.users) {
+          setUsers(response.data.users);
+          setFilteredUsers(response.data.users);
+        } else if (Array.isArray(response.data)) {
+          setUsers(response.data);
+          setFilteredUsers(response.data);
+        } else {
+          console.error('Unexpected response format:', response.data);
+          setError('Invalid response format from server');
+        }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch data');
+        console.error('Error fetching users:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch users');
       } finally {
         setLoading(false);
       }
@@ -60,9 +81,10 @@ const AdminDashboard = () => {
 
     if (search) {
       filtered = filtered.filter(user => 
-        user.username.toLowerCase().includes(search.toLowerCase()) ||
-        user.phone.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase())
+        user.username?.toLowerCase().includes(search.toLowerCase()) ||
+        user.phone?.toLowerCase().includes(search.toLowerCase()) ||
+        user.email?.toLowerCase().includes(search.toLowerCase()) ||
+        user.name?.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -185,28 +207,28 @@ const AdminDashboard = () => {
             {[
               { 
                 label: 'Total Users', 
-                value: filteredUsers.length, 
+                value: users.length, 
                 color: 'blue',
                 icon: UsersIcon,
                 description: 'All registered users'
               },
               { 
                 label: 'Technicians', 
-                value: filteredUsers.filter(u => u.role === 'technician').length, 
+                value: users.filter(u => u.role === 'technician').length, 
                 color: 'emerald',
                 icon: CogIcon,
                 description: 'Active technicians'
               },
               { 
                 label: 'Regular Users', 
-                value: filteredUsers.filter(u => u.role === 'user').length, 
+                value: users.filter(u => u.role === 'user').length, 
                 color: 'purple',
                 icon: UsersIcon,
                 description: 'Customer accounts'
               },
               { 
                 label: 'Active Users', 
-                value: filteredUsers.filter(u => u.status === 'active').length, 
+                value: users.filter(u => u.status === 'active').length, 
                 color: 'emerald',
                 icon: CheckCircleIcon,
                 description: 'Currently active'
@@ -264,100 +286,110 @@ const AdminDashboard = () => {
         {/* Users Table */}
         <motion.div variants={itemVariants}>
           <GlassCard className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-white/5 border-b border-white/10">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Contact</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10">
-                  <AnimatePresence>
-                    {filteredUsers.map((user, index) => (
-                      <motion.tr
-                        key={user.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="hover:bg-white/5 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                              {user.username.charAt(0).toUpperCase()}
+            {filteredUsers.length === 0 ? (
+              <div className="p-12 text-center">
+                <UsersIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">No users found</h3>
+                <p className="text-gray-400">
+                  {users.length === 0 ? 'No users in the system yet' : 'No users match your search criteria'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-white/5 border-b border-white/10">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Contact</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    <AnimatePresence>
+                      {filteredUsers.map((user, index) => (
+                        <motion.tr
+                          key={user.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="hover:bg-white/5 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                {(user.username || user.name || 'U').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-white">{user.username || 'N/A'}</div>
+                                <div className="text-sm text-gray-400">{user.name || 'No name'}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="text-sm font-medium text-white">{user.username}</div>
-                              <div className="text-sm text-gray-400">{user.name}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-white">{user.email}</div>
-                          <div className="text-sm text-gray-400">{user.phone}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.role === 'admin' 
-                              ? 'bg-red-100 text-red-800' 
-                              : user.role === 'technician' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            {user.status === 'active' ? (
-                              <CheckCircleIcon className="w-5 h-5 text-green-400 mr-2" />
-                            ) : (
-                              <XCircleIcon className="w-5 h-5 text-red-400 mr-2" />
-                            )}
-                            <span className={`text-sm ${user.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                              {user.status}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-white">{user.email || 'No email'}</div>
+                            <div className="text-sm text-gray-400">{user.phone || 'No phone'}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              user.role === 'admin' 
+                                ? 'bg-red-100 text-red-800' 
+                                : user.role === 'technician' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {user.role || 'user'}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-2">
-                            <AnimatedButton
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(user.id)}
-                              icon={<EyeIcon className="w-4 h-4" />}
-                            >
-                              View
-                            </AnimatedButton>
-                            <AnimatedButton
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(user.id)}
-                              icon={<PencilIcon className="w-4 h-4" />}
-                            >
-                              Edit
-                            </AnimatedButton>
-                            <AnimatedButton
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDelete(user.id)}
-                              icon={<TrashIcon className="w-4 h-4" />}
-                            >
-                              Delete
-                            </AnimatedButton>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              {(user.status || 'active') === 'active' ? (
+                                <CheckCircleIcon className="w-5 h-5 text-green-400 mr-2" />
+                              ) : (
+                                <XCircleIcon className="w-5 h-5 text-red-400 mr-2" />
+                              )}
+                              <span className={`text-sm ${(user.status || 'active') === 'active' ? 'text-green-400' : 'text-red-400'}`}>
+                                {user.status || 'active'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              <AnimatedButton
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(user.id)}
+                                icon={<EyeIcon className="w-4 h-4" />}
+                              >
+                                View
+                              </AnimatedButton>
+                              <AnimatedButton
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(user.id)}
+                                icon={<PencilIcon className="w-4 h-4" />}
+                              >
+                                Edit
+                              </AnimatedButton>
+                              <AnimatedButton
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(user.id)}
+                                icon={<TrashIcon className="w-4 h-4" />}
+                              >
+                                Delete
+                              </AnimatedButton>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </div>
+            )}
           </GlassCard>
         </motion.div>
       </motion.div>
