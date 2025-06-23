@@ -357,3 +357,38 @@ def delete_technician_leave(leave_id):
     conn.close()
 
     return jsonify({"message": "Leave cancelled successfully"}), 200
+@tech_bp.route("/service-history", methods=["GET"])
+@token_required(role="technician")
+def technician_service_history():
+    technician_id = g.current_user["sub"]
+
+    query = """
+        SELECT 
+            b.booking_id,
+            s.name AS service_name,
+            DATE(b.booking_date) AS booking_date,
+            b.location_lat,
+            b.location_lng,
+            s.duration_minutes,
+            u.name AS user_name,
+            b.feedback,
+            b.sentiment,
+            p.amount,
+            p.status AS payment_status
+        FROM booking_technicians bt
+        JOIN bookings b ON bt.booking_id = b.booking_id
+        JOIN services s ON b.service_id = s.service_id
+        JOIN users u ON b.user_id = u.id
+        LEFT JOIN payments p ON p.booking_id = b.booking_id
+        WHERE bt.technician_id = %s AND b.status = 'completed'
+        ORDER BY b.booking_date DESC
+    """
+
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(query, (technician_id,))
+    history = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return jsonify({"history": history})

@@ -271,7 +271,6 @@ def get_cart():
     conn.close()
     return jsonify({'items': items})
 
-
 @user_bp.route('/cart/add', methods=['POST'])
 @token_required(role='user')
 def add_to_cart():
@@ -294,19 +293,15 @@ def add_to_cart():
     if product[0] < quantity:
         cursor.close()
         conn.close()
-        return jsonify({'error': 'Not enough inventory'}), 400
+        return jsonify({'error': f'Only {product[0]} items available in stock.'}), 400
 
     cursor.execute("SELECT quantity FROM cart WHERE user_id = %s AND product_id = %s AND status = 'in_cart'",
                    (user['sub'], product_id))
     existing = cursor.fetchone()
     if existing:
-        new_qty = existing[0] + quantity
-        if product[0] < new_qty:
-            cursor.close()
-            conn.close()
-            return jsonify({'error': 'Not enough inventory for update'}), 400
+        # Replace existing quantity with new one
         cursor.execute("UPDATE cart SET quantity = %s, updated_at = CURRENT_TIMESTAMP WHERE user_id = %s AND product_id = %s AND status = 'in_cart'",
-                       (new_qty, user['sub'], product_id))
+                       (quantity, user['sub'], product_id))
     else:
         cursor.execute("INSERT INTO cart (user_id, product_id, quantity) VALUES (%s, %s, %s)",
                        (user['sub'], product_id, quantity))
@@ -314,6 +309,7 @@ def add_to_cart():
     cursor.close()
     conn.close()
     return jsonify({'message': 'Added to cart successfully'})
+
 
 
 @user_bp.route('/cart/remove/<int:product_id>', methods=['DELETE'])
@@ -339,7 +335,7 @@ def confirm_payment():
     cart_ids = data.get('cart_ids')
     delivery_address = data.get('delivery_address')
     phone = data.get('phone')
-    razorpay_payment_id = data.get('razorpay_payment_id')  # you can store or ignore
+    razorpay_payment_id = data.get('razorpay_payment_id')  # Optional
 
     if not cart_ids or not delivery_address or not phone:
         return jsonify({'error': 'Missing fields'}), 400
@@ -351,7 +347,8 @@ def confirm_payment():
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         placeholders = ','.join(['%s'] * len(cart_ids))
 
-        query = f"""
+        # Update cart to mark items as ordered
+        update_cart_query = f"""
             UPDATE cart
             SET status = 'ordered',
                 delivery_address = %s,
@@ -360,11 +357,31 @@ def confirm_payment():
                 updated_at = %s
             WHERE cart_id IN ({placeholders}) AND user_id = %s
         """
-
         params = [delivery_address, phone, now, now, *cart_ids, user['sub']]
-        cursor.execute(query, params)
-        conn.commit()
+        cursor.execute(update_cart_query, params)
 
+        # Fetch product_id and quantity
+        fetch_items_query = f"""
+            SELECT product_id, quantity FROM cart
+            WHERE cart_id IN ({placeholders}) AND user_id = %s
+        """
+        cursor.execute(fetch_items_query, [*cart_ids, user['sub']])
+        items = cursor.fetchall()
+
+        # Reduce inventory
+        for product_id, quantity in items:
+            cursor.execute("""
+                UPDATE store 
+                SET inventory_amount = inventory_amount - %s 
+                WHERE id = %s AND inventory_amount >= %s
+            """, (quantity, product_id, quantity))
+            if cursor.rowcount == 0:
+                conn.rollback()
+                cursor.close()
+                conn.close()
+                return jsonify({'error': f'Not enough inventory for product {product_id}'}), 400
+
+        conn.commit()
         cursor.close()
         conn.close()
         return jsonify({'message': 'Order placed successfully'}), 200
@@ -372,6 +389,7 @@ def confirm_payment():
     except Exception as e:
         print("Confirm payment error:", e)
         return jsonify({'error': 'Internal server error'}), 500
+
 @user_bp.route('/cart/orders', methods=['GET'])
 @token_required(role='user')
 def get_orders():
@@ -511,9 +529,13 @@ def user_chat():
     
 
 def get_hybrid_recommendations(user_id, engine):
-    """Enhanced recommendation system combining multiple approaches"""
-    # Load all necessary data
-    store_df = pd.read_sql("SELECT id, name, category, description FROM store", engine)
+    """Enhanced recommendation system combining content-based and collaborative filtering"""
+    # Load all necessary data from store (including price)
+    store_df = pd.read_sql("""
+        SELECT id, name, category, description, price
+        FROM store
+    """, engine)
+
     cart_df = pd.read_sql(f"""
         SELECT product_id 
         FROM cart 
@@ -523,22 +545,21 @@ def get_hybrid_recommendations(user_id, engine):
     if cart_df.empty or store_df.empty:
         return []
 
-    # 1. Content-Based (TF-IDF) - Improved version
+    # Text-based similarity (TF-IDF)
     store_df['text'] = (
-        store_df['name'] + ' ' + 
-        store_df['category'] + ' ' + 
+        store_df['name'].fillna('') + ' ' +
+        store_df['category'].fillna('') + ' ' +
         store_df['description'].fillna('')
     )
-    
-    # Improved text preprocessing
+
     tfidf = TfidfVectorizer(
         stop_words='english',
-        min_df=2,  # Ignore terms that appear in only 1 product
-        max_df=0.8  # Ignore terms that appear in >80% of products
+        min_df=2,
+        max_df=0.8
     )
     tfidf_matrix = tfidf.fit_transform(store_df['text'])
 
-    # 2. Collaborative Filtering (if we have purchase history)
+    # Collaborative filtering data
     try:
         ratings_data = pd.read_sql(f"""
             SELECT 
@@ -550,9 +571,9 @@ def get_hybrid_recommendations(user_id, engine):
                     ELSE 1 
                 END as rating
             FROM cart 
-            WHERE user_id = {user_id} AND status != 'in_cart'
+            WHERE status != 'in_cart'
         """, engine)
-        
+
         if not ratings_data.empty:
             reader = Reader(rating_scale=(1, 5))
             data = Dataset.load_from_df(ratings_data[['user_id', 'product_id', 'rating']], reader)
@@ -560,50 +581,48 @@ def get_hybrid_recommendations(user_id, engine):
             sim_options = {'name': 'cosine', 'user_based': False}
             algo = KNNBasic(sim_options=sim_options)
             algo.fit(trainset)
+        else:
+            ratings_data = pd.DataFrame()  # To avoid reference errors
     except Exception as e:
         print(f"Collaborative filtering skipped: {str(e)}")
+        ratings_data = pd.DataFrame()
 
-    # Get cart items
+    # Identify items from past purchases
     cart_product_ids = cart_df['product_id'].unique().tolist()
     cart_indices = store_df[store_df['id'].isin(cart_product_ids)].index.tolist()
 
     if not cart_indices:
         return []
 
-    # Hybrid scoring
+    # Score function for each item
     def calculate_scores(product_id):
-        # Content-based score
         idx = store_df[store_df['id'] == product_id].index[0]
         content_score = cosine_similarity(
             np.asarray(tfidf_matrix[cart_indices].mean(axis=0)).reshape(1, -1),
             np.asarray(tfidf_matrix[idx].toarray()).reshape(1, -1)
         )[0][0]
 
-        
-        # Collaborative score (if available)
         collab_score = 0
         if not ratings_data.empty:
             try:
                 pred = algo.predict(user_id, product_id)
-                collab_score = pred.est / 5  # Normalize to 0-1
+                collab_score = pred.est / 5
             except:
                 pass
-        
-        # Combine scores (weighted)
+
         return 0.7 * content_score + 0.3 * collab_score
 
-    # Calculate scores for all products not in cart
+    # Recommend items not already bought
     recommendations = store_df[~store_df['id'].isin(cart_product_ids)].copy()
     recommendations['similarity'] = recommendations['id'].apply(calculate_scores)
-    
-    # Get top 3 recommendations
+
     top_recommendations = recommendations.sort_values(
-        by='similarity', 
+        by='similarity',
         ascending=False
     ).head(3)
 
-    return top_recommendations[['id', 'name', 'category', 'description']].to_dict(orient='records')
-
+    # Return including price
+    return top_recommendations[['id', 'name', 'category', 'description', 'price']].to_dict(orient='records')
 
 @user_bp.route("/store", methods=["GET"])
 @token_required(role='user')
@@ -760,26 +779,21 @@ def buy_single(product_id):
     if product[0] < quantity:
         cursor.close()
         conn.close()
-        return jsonify({'error': 'Not enough inventory'}), 400
+        return jsonify({'error': f'Only {product[0]} items in stock'}), 400
 
-    # Insert into cart with status='in_cart' (or update if already present)
+    # Insert or update cart (overwrite quantity)
     cursor.execute("""
-        SELECT cart_id, quantity FROM cart 
+        SELECT cart_id FROM cart 
         WHERE user_id = %s AND product_id = %s AND status = 'in_cart'
     """, (user['sub'], product_id))
     existing = cursor.fetchone()
 
     if existing:
-        new_qty = existing[1] + quantity
-        if product[0] < new_qty:
-            cursor.close()
-            conn.close()
-            return jsonify({'error': 'Not enough inventory for update'}), 400
         cursor.execute("""
             UPDATE cart 
             SET quantity = %s, updated_at = CURRENT_TIMESTAMP 
             WHERE cart_id = %s
-        """, (new_qty, existing[0]))
+        """, (quantity, existing[0]))
         cart_id = existing[0]
     else:
         cursor.execute("""
@@ -792,4 +806,4 @@ def buy_single(product_id):
     cursor.close()
     conn.close()
 
-    return jsonify({'message': 'Buy now item inserted into cart', 'cart_id': cart_id})
+    return jsonify({'message': 'Buy now item ready', 'cart_id': cart_id})

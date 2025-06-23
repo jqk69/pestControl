@@ -686,30 +686,54 @@ def get_all_orders():
         if cursor: cursor.close()
         if connection: connection.close()
 
-
-
 @admin_bp.route('/orders/<int:cart_id>', methods=['PATCH'])
 @token_required(role='admin')
 def update_order_status(cart_id):
     data = request.get_json()
     status = data.get('status')
+
     if status not in ['shipped', 'cancelled']:
         return jsonify({'message': 'Invalid status'}), 400
 
     try:
         connection = create_connection()
         cursor = connection.cursor()
+
+        if status == 'cancelled':
+            # First, check current status
+            cursor.execute("SELECT product_id, quantity, status FROM cart WHERE cart_id = %s", (cart_id,))
+            item = cursor.fetchone()
+            if not item:
+                return jsonify({'message': 'Cart item not found'}), 404
+
+            product_id, quantity, current_status = item
+
+            if current_status != 'ordered':
+                return jsonify({'message': 'Only ordered items can be cancelled with inventory restoration'}), 400
+
+            # Restore inventory
+            cursor.execute("""
+                UPDATE store 
+                SET inventory_amount = inventory_amount + %s 
+                WHERE id = %s
+            """, (quantity, product_id))
+
+        # Update status regardless
         cursor.execute("UPDATE cart SET status = %s WHERE cart_id = %s", (status, cart_id))
         connection.commit()
+
         return jsonify({'message': 'Order status updated'}), 200
+
     except Exception as e:
         print(e)
         return jsonify({'message': 'Server error'}), 500
+
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 # Get all custom requests with user names
 @admin_bp.route('/bookings/history', methods=['GET'])
 @token_required(role="admin")
