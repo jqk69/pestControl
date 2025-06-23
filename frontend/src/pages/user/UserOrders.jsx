@@ -1,15 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ShoppingBagIcon,
+  TruckIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
+import { AnimatedButton } from '../../components/ui/AnimatedButton';
+import { FloatingOrbs } from '../../components/ui/FloatingElements';
 
 const STATUSES = ['all', 'ordered', 'shipped', 'delivered', 'cancelled'];
+
+const statusConfig = {
+  ordered: { color: 'blue', icon: ClockIcon, label: 'Ordered' },
+  shipped: { color: 'orange', icon: TruckIcon, label: 'Shipped' },
+  delivered: { color: 'emerald', icon: CheckCircleIcon, label: 'Delivered' },
+  cancelled: { color: 'red', icon: XCircleIcon, label: 'Cancelled' },
+};
 
 export default function UserOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   const fetchOrders = async () => {
@@ -38,121 +60,220 @@ export default function UserOrders() {
     fetchOrders();
   }, []);
 
-  // Filter orders based on filterStatus
-  const filteredOrders =
-    filterStatus === 'all'
-      ? orders
-      : orders.filter((order) => order.status?.toLowerCase() === filterStatus.toLowerCase());
+  const filteredOrders = orders.filter(order => {
+    const matchesStatus = filterStatus === 'all' || order.status?.toLowerCase() === filterStatus.toLowerCase();
+    const matchesSearch = !searchTerm || order.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+      },
+    },
+  };
 
   if (loading) {
     return (
-      <div className="p-6 min-h-screen flex justify-center items-center bg-gray-900">
-        <div className="animate-spin h-12 w-12 border-t-4 border-green-500 rounded-full"></div>
-      </div>
-    );
-  }
-
-  if (orders.length === 0) {
-    return (
-      <div className="p-6 min-h-screen flex justify-center items-center bg-gray-900">
-        <p className="text-lg text-gray-400">No orders found.</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center relative overflow-hidden">
+        <FloatingOrbs />
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading your orders...</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-900 min-h-screen">
-      <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-        <h1 className="text-4xl font-extrabold text-gray-100">📦 Your Orders</h1>
-
-        {/* Status Filter */}
-        <div className="flex items-center">
-          <label htmlFor="statusFilter" className="mr-2 font-medium text-gray-300">
-            Filter by status:
-          </label>
-          <select
-            id="statusFilter"
-            className="border border-gray-700 bg-gray-800 text-gray-100 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            {STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status === 'all'
-                  ? 'All'
-                  : status
-                      .split('_')
-                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(' ')}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {filteredOrders.length === 0 ? (
-        <p className="text-center text-gray-400">No orders found for selected status.</p>
-      ) : (
-        <div className="space-y-8">
-          {filteredOrders.map((item) => (
-            <div
-              key={item.cart_id}
-              className="bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:shadow-xl border border-gray-700 transition-shadow duration-300"
-            >
-              <div className="flex-1 w-full md:pr-8">
-                <h2 className="text-2xl font-semibold text-gray-100">{item.name}</h2>
-                <div className="mt-2 space-y-1 text-gray-400">
-                  <p>
-                    <span className="font-medium text-gray-300">Quantity:</span> {item.quantity}
-                  </p>
-                  <p>
-                    <span className="font-medium text-gray-300">Status:</span>{' '}
-                    <span
-                      className={`capitalize font-semibold ${
-                        item.status === 'delivered'
-                          ? 'text-green-400'
-                          : item.status === 'cancelled'
-                          ? 'text-red-400'
-                          : item.status === 'in_cart'
-                          ? 'text-blue-400'
-                          : 'text-yellow-400'
-                      }`}
-                    >
-                      {item.status.replace('_', ' ')}
-                    </span>
-                  </p>
-                  {item.delivery_address && (
-                    <p>
-                      <span className="font-medium text-gray-300">Delivery Address:</span>{' '}
-                      <span className="text-gray-400">{item.delivery_address}</span>
-                    </p>
-                  )}
-                  {item.phone && (
-                    <p>
-                      <span className="font-medium text-gray-300">Phone:</span>{' '}
-                      <span className="text-gray-400">{item.phone}</span>
-                    </p>
-                  )}
-                  {item.order_date && (
-                    <p>
-                      <span className="font-medium text-gray-300">Order Date:</span>{' '}
-                      <span className="text-gray-400">
-                        {new Date(item.order_date).toLocaleString()}
-                      </span>
-                    </p>
-                  )}
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 relative overflow-hidden">
+      <FloatingOrbs />
+      
+      <motion.div
+        className="relative z-10 p-6 max-w-7xl mx-auto space-y-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div variants={itemVariants}>
+          <GlassCard className="p-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent mb-2 flex items-center gap-3">
+                  <ShoppingBagIcon className="w-10 h-10 text-emerald-400" />
+                  Your Orders
+                </h1>
+                <p className="text-gray-300 text-lg">Track and manage your purchases</p>
               </div>
 
-              <div className="mt-4 md:mt-0 flex flex-col items-end">
-                <div className="text-3xl font-bold text-green-400">
-                  ₹{(item.price * item.quantity).toFixed(2)}
-                </div>
+              {/* Search */}
+              <div className="relative w-full md:w-80">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </GlassCard>
+        </motion.div>
+
+        {/* Status Filter */}
+        <motion.div variants={itemVariants}>
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <FunnelIcon className="w-5 h-5 text-emerald-400" />
+              <span className="text-white font-medium">Filter by status:</span>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {STATUSES.map((status) => (
+                <motion.button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                    filterStatus === status
+                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
+                      : 'bg-white/10 text-gray-300 hover:bg-white/20 border border-white/20'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {status === 'all' ? 'All Orders' : statusConfig[status]?.label || status}
+                </motion.button>
+              ))}
+            </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* Orders List */}
+        {filteredOrders.length === 0 ? (
+          <motion.div variants={itemVariants}>
+            <GlassCard className="p-12 text-center">
+              <ExclamationTriangleIcon className="w-20 h-20 text-gray-500 mx-auto mb-6" />
+              <h2 className="text-3xl font-bold text-white mb-4">
+                {orders.length === 0 ? 'No orders found' : 'No matching orders'}
+              </h2>
+              <p className="text-gray-400 mb-8 text-lg">
+                {orders.length === 0 
+                  ? 'Start shopping to see your orders here'
+                  : 'Try adjusting your search or filter criteria'
+                }
+              </p>
+              <AnimatedButton
+                variant="primary"
+                size="lg"
+                onClick={() => navigate('/user/store')}
+                icon={<ShoppingBagIcon className="w-5 h-5" />}
+              >
+                Start Shopping
+              </AnimatedButton>
+            </GlassCard>
+          </motion.div>
+        ) : (
+          <motion.div variants={itemVariants} className="space-y-6">
+            <AnimatePresence>
+              {filteredOrders.map((item, index) => {
+                const config = statusConfig[item.status] || { color: 'gray', icon: ClockIcon, label: item.status };
+                const StatusIcon = config.icon;
+                
+                return (
+                  <motion.div
+                    key={item.cart_id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <NeonCard className="p-6" color={config.color}>
+                      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                        {/* Order Info */}
+                        <div className="flex-1">
+                          <div className="flex items-start gap-4">
+                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0">
+                              <img
+                                src={`http://127.0.0.1:5000/static/products/${item.image_path}`}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => (e.target.src = '/placeholder-image.jpg')}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-white mb-2">{item.name}</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                <p className="text-gray-300">
+                                  <span className="font-medium">Quantity:</span> {item.quantity}
+                                </p>
+                                <p className="text-gray-300">
+                                  <span className="font-medium">Order ID:</span> #{item.cart_id}
+                                </p>
+                                {item.delivery_address && (
+                                  <p className="text-gray-300 md:col-span-2">
+                                    <span className="font-medium">Address:</span> {item.delivery_address}
+                                  </p>
+                                )}
+                                {item.phone && (
+                                  <p className="text-gray-300">
+                                    <span className="font-medium">Phone:</span> {item.phone}
+                                  </p>
+                                )}
+                                {item.order_date && (
+                                  <p className="text-gray-300">
+                                    <span className="font-medium">Ordered:</span> {new Date(item.order_date).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status and Price */}
+                        <div className="flex flex-col items-end gap-4">
+                          <div className="flex items-center gap-2">
+                            <StatusIcon className={`w-5 h-5 text-${config.color}-400`} />
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${config.color}-500/20 text-${config.color}-400 border border-${config.color}-500/30`}>
+                              {config.label}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-emerald-400">
+                              ₹{(item.price * item.quantity).toFixed(2)}
+                            </p>
+                            <p className="text-sm text-gray-400">₹{item.price} × {item.quantity}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </NeonCard>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 }

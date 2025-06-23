@@ -25,7 +25,7 @@ export const FloatingOrbs = () => {
           transition={{
             duration: Math.random() * 10 + 10,
             repeat: Infinity,
-            repeatType: 'reverse',
+            repeatType: "reverse",
           }}
         />
       ))}

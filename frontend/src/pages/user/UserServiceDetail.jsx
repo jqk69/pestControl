@@ -1,5 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ShieldCheckIcon,
+  MapPinIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
+  SparklesIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
 import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -7,6 +19,9 @@ import 'leaflet-control-geocoder/dist/Control.Geocoder.css';
 import 'leaflet-control-geocoder';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
+import { AnimatedButton } from '../../components/ui/AnimatedButton';
+import { FloatingOrbs } from '../../components/ui/FloatingElements';
 
 export default function UserServiceDetail() {
   const { id } = useParams();
@@ -118,9 +133,7 @@ export default function UserServiceDetail() {
     }
 
     const bookingDate = new Date(`${selectedDate}T${selectedTime}:00`);
-
     const pad = (num) => num.toString().padStart(2, '0');
-
     const bookingDateTime = `${bookingDate.getFullYear()}-${pad(
       bookingDate.getMonth() + 1
     )}-${pad(bookingDate.getDate())} ${pad(bookingDate.getHours())}:${pad(
@@ -128,7 +141,6 @@ export default function UserServiceDetail() {
     )}:${pad(bookingDate.getSeconds())}`;
 
     const now = new Date();
-
     if (bookingDate < now) {
       toast.error('Booking date and time must be in the future');
       return;
@@ -174,18 +186,59 @@ export default function UserServiceDetail() {
     if (hour < 18) timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+      },
+    },
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64 bg-gray-900 text-gray-400 text-lg">
-        Loading service details...
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center relative overflow-hidden">
+        <FloatingOrbs />
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading service details...</p>
+        </motion.div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64 bg-gray-900 text-red-400 font-semibold">
-        {error}
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center relative overflow-hidden">
+        <FloatingOrbs />
+        <GlassCard className="text-center p-8 max-w-md mx-auto">
+          <ExclamationTriangleIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-4">Service Not Found</h2>
+          <p className="text-gray-300 mb-6">{error}</p>
+          <AnimatedButton
+            variant="primary"
+            onClick={() => navigate('/user/services')}
+          >
+            Back to Services
+          </AnimatedButton>
+        </GlassCard>
       </div>
     );
   }
@@ -193,116 +246,169 @@ export default function UserServiceDetail() {
   const { name, category, service_type, technicians_needed, price, description } = service;
 
   return (
-    <section className="max-w-7xl mx-auto bg-gray-800 shadow-lg rounded-lg px-4 py-6 my-12">
-      <header className="mb-6 border-b border-gray-700 pb-6">
-        <h1 className="text-4xl font-extrabold text-gray-100 tracking-tight">{name}</h1>
-        <p className="mt-2 text-gray-400 text-lg">
-          <span className="font-semibold">Category:</span> {category} |{' '}
-          <span className="font-semibold">Service Type:</span> {service_type}
-        </p>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 relative overflow-hidden">
+      <FloatingOrbs />
+      
+      <motion.div
+        className="relative z-10 p-6 max-w-7xl mx-auto space-y-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div variants={itemVariants}>
+          <GlassCard className="p-6">
+            <div className="text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+              >
+                <ShieldCheckIcon className="w-16 h-16 mx-auto mb-4 text-emerald-400" />
+              </motion.div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent mb-2">
+                {name}
+              </h1>
+              <div className="flex items-center justify-center gap-4 text-gray-300">
+                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm">
+                  {category}
+                </span>
+                <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
+                  {service_type}
+                </span>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-gray-100">
-            <div className="bg-gray-700 rounded-md p-6 shadow-inner flex flex-col justify-center">
-              <h3 className="font-semibold text-lg mb-2 text-gray-300">Technicians Needed</h3>
-              <p className="text-2xl font-medium">{technicians_needed}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Service Details */}
+          <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+            {/* Service Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <NeonCard className="p-6 text-center" color="emerald">
+                <UserGroupIcon className="w-8 h-8 mx-auto mb-3 text-emerald-400" />
+                <h3 className="text-lg font-semibold text-white mb-1">Technicians</h3>
+                <p className="text-2xl font-bold text-emerald-400">{technicians_needed}</p>
+              </NeonCard>
+              
+              <NeonCard className="p-6 text-center" color="blue">
+                <CurrencyDollarIcon className="w-8 h-8 mx-auto mb-3 text-blue-400" />
+                <h3 className="text-lg font-semibold text-white mb-1">Price</h3>
+                <p className="text-2xl font-bold text-blue-400">₹{price}</p>
+              </NeonCard>
+              
+              <NeonCard className="p-6 text-center" color="purple">
+                <DocumentTextIcon className="w-8 h-8 mx-auto mb-3 text-purple-400" />
+                <h3 className="text-lg font-semibold text-white mb-1">Description</h3>
+                <p className="text-sm text-gray-300">{description}</p>
+              </NeonCard>
             </div>
-            <div className="bg-gray-700 rounded-md p-6 shadow-inner flex flex-col justify-center">
-              <h3 className="font-semibold text-lg mb-2 text-gray-300">Price</h3>
-              <p className="text-2xl font-medium text-green-400">₹{price}</p>
-            </div>
-            <div className="bg-gray-700 rounded-md p-6 shadow-inner">
-              <h3 className="font-semibold text-lg mb-2 text-gray-300">Description</h3>
-              <p className="text-gray-400 leading-relaxed">{description}</p>
-            </div>
-          </div>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4 text-gray-100">Select Service Location</h2>
-            <div
-              id="map"
-              className="w-full h-[420px] rounded-lg border border-gray-700 shadow-sm"
-              aria-label="Map to select service location"
-            />
-            <button
-              type="button"
-              onClick={removeMarker}
-              className="mt-4 inline-block bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2 rounded-lg transition duration-300"
-            >
-              Remove Marker
-            </button>
-          </section>
+            {/* Map Section */}
+            <GlassCard className="p-6">
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                <MapPinIcon className="w-6 h-6 text-emerald-400" />
+                Select Service Location
+              </h2>
+              <div
+                id="map"
+                className="w-full h-96 rounded-xl border border-white/20 shadow-lg"
+                aria-label="Map to select service location"
+              />
+              <div className="mt-4">
+                <AnimatedButton
+                  variant="danger"
+                  size="sm"
+                  onClick={removeMarker}
+                  icon={<SparklesIcon className="w-4 h-4" />}
+                >
+                  Clear Location
+                </AnimatedButton>
+              </div>
+            </GlassCard>
+          </motion.div>
+
+          {/* Booking Form */}
+          <motion.div variants={itemVariants}>
+            <NeonCard className="p-6 sticky top-6" color="emerald">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <CalendarDaysIcon className="w-6 h-6 text-emerald-400" />
+                Book This Service
+              </h2>
+
+              <form onSubmit={handleSave} className="space-y-6">
+                <div>
+                  <label htmlFor="bookingDate" className="block text-sm font-medium text-gray-300 mb-2">
+                    Booking Date
+                  </label>
+                  <input
+                    id="bookingDate"
+                    type="date"
+                    min={minDate}
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="bookingTime" className="block text-sm font-medium text-gray-300 mb-2">
+                    Booking Time
+                  </label>
+                  <select
+                    id="bookingTime"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  >
+                    {timeSlots.map((time) => (
+                      <option key={time} value={time} className="bg-gray-800">
+                        {time}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="requirements" className="block text-sm font-medium text-gray-300 mb-2">
+                    Special Requirements
+                  </label>
+                  <textarea
+                    id="requirements"
+                    rows={4}
+                    placeholder="Any special instructions or requirements..."
+                    value={requirements}
+                    onChange={(e) => setRequirements(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-white/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-lg font-medium text-white">Total Amount</span>
+                    <span className="text-2xl font-bold text-emerald-400">₹{price}</span>
+                  </div>
+                  
+                  <AnimatedButton
+                    type="submit"
+                    variant="neon"
+                    size="lg"
+                    loading={isBooking}
+                    disabled={isBooking}
+                    icon={!isBooking && <ShieldCheckIcon className="w-5 h-5" />}
+                    className="w-full"
+                  >
+                    {isBooking ? 'Processing...' : 'Book This Service'}
+                  </AnimatedButton>
+                </div>
+              </form>
+            </NeonCard>
+          </motion.div>
         </div>
-
-        <section>
-          <h2 className="text-2xl font-semibold mb-6 text-gray-100">Booking Details</h2>
-          <div className="flex flex-col gap-6">
-            <div>
-              <label htmlFor="bookingDate" className="block text-lg font-medium text-gray-300 mb-2">
-                Booking Date
-              </label>
-              <input
-                id="bookingDate"
-                type="date"
-                min={minDate}
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="block w-full rounded-md border border-gray-700 bg-gray-900 text-gray-100 shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="bookingTime" className="block text-lg font-medium text-gray-300 mb-2">
-                Booking Time
-              </label>
-              <select
-                id="bookingTime"
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                className="block w-full rounded-md border border-gray-700 bg-gray-900 text-gray-100 shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                required
-              >
-                {timeSlots.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor="requirements"
-                className="block text-lg font-medium text-gray-300 mb-3 mt-12"
-              >
-                Special Requirements / Requests
-              </label>
-              <textarea
-                id="requirements"
-                rows={6}
-                placeholder="Enter any special instructions or requests..."
-                value={requirements}
-                onChange={(e) => setRequirements(e.target.value)}
-                className="block w-full rounded-md border border-gray-700 bg-gray-900 text-gray-100 shadow-sm px-4 py-3 resize-y focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isBooking}
-              className={`inline-block ${
-                isBooking ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-500'
-              } text-white font-extrabold px-8 py-4 rounded-lg shadow-lg transition duration-300 mt-5`}
-              aria-label={`Book the ${name} service for ₹${price}`}
-            >
-              {isBooking ? 'Processing...' : `Book This Service for ₹${price}`}
-            </button>
-          </div>
-        </section>
-      </div>
-    </section>
+      </motion.div>
+    </div>
   );
 }

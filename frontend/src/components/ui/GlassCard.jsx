@@ -24,6 +24,7 @@ export const NeonCard = ({ children, className = '', color = 'emerald', ...props
     pink: 'shadow-pink-500/25 border-pink-500/30 hover:shadow-pink-500/40',
     orange: 'shadow-orange-500/25 border-orange-500/30 hover:shadow-orange-500/40',
     red: 'shadow-red-500/25 border-red-500/30 hover:shadow-red-500/40',
+    yellow: 'shadow-yellow-500/25 border-yellow-500/30 hover:shadow-yellow-500/40',
   };
 
   return (
