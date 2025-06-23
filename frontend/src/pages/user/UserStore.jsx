@@ -1,7 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Leaf, ShoppingCart, Zap, Search, Filter, Star, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  MagnifyingGlassIcon, 
+  FunnelIcon, 
+  StarIcon, 
+  ChevronDownIcon,
+  ShoppingCartIcon,
+  BoltIcon,
+  SparklesIcon,
+  LeafIcon
+} from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
+import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
+import { AnimatedButton } from '../../components/ui/AnimatedButton';
+import { FloatingOrbs } from '../../components/ui/FloatingElements';
 
 export default function UserStore() {
   const [products, setProducts] = useState([]);
@@ -112,13 +125,14 @@ export default function UserStore() {
       );
 
       if (response.status === 200) {
-        const addButton = document.getElementById(`add-to-cart-${product.id}`);
-        if (addButton) {
-          addButton.textContent = '✓ Added!';
-          addButton.classList.add('bg-green-500', 'text-white');
+        // Show success animation
+        const button = document.getElementById(`add-to-cart-${product.id}`);
+        if (button) {
+          button.innerHTML = '✓ Added!';
+          button.classList.add('bg-emerald-500');
           setTimeout(() => {
-            addButton.textContent = 'Add to Cart';
-            addButton.classList.remove('bg-green-500', 'text-white');
+            button.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5-6M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6"></path></svg>Cart';
+            button.classList.remove('bg-emerald-500');
           }, 2000);
         }
       }
@@ -163,201 +177,320 @@ export default function UserStore() {
   const renderStars = (rating) => (
     <div className="flex items-center justify-center">
       {[1, 2, 3, 4, 5].map((star) => (
-        <Star
+        <StarIcon
           key={star}
-          size={16}
-          className={`${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
+          className={`w-4 h-4 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
         />
       ))}
     </div>
   );
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+      },
+    },
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-16 w-16 bg-gray-700 rounded-full mb-4"></div>
-          <div className="h-4 w-32 bg-gray-700 rounded"></div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center relative overflow-hidden">
+        <FloatingOrbs />
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading amazing products...</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <div className="bg-gradient-to-r from-green-600 to-teal-500 py-16 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">Pest Control Solutions</h1>
-        <p className="text-xl mb-8">Effective, safe, and eco-friendly products for your home</p>
-        <div className="max-w-2xl mx-auto relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="text-gray-300" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search for products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-800 text-gray-100 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 relative overflow-hidden">
+      <FloatingOrbs />
+      
+      {/* Hero Section */}
+      <div className="relative z-10">
+        <motion.div
+          className="bg-gradient-to-r from-emerald-600/20 to-teal-500/20 backdrop-blur-xl border-b border-white/10 py-16 text-center"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <motion.h1 
+            className="text-5xl font-bold bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-400 bg-clip-text text-transparent mb-4"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring' }}
+          >
+            Premium Pest Solutions
+          </motion.h1>
+          <motion.p 
+            className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            Discover our curated collection of effective, safe, and eco-friendly pest control products
+          </motion.p>
+          
+          <motion.div 
+            className="max-w-2xl mx-auto relative"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="text-gray-400 w-6 h-6" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search for the perfect solution..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 backdrop-blur-xl text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder-gray-400 text-lg"
+            />
+          </motion.div>
+        </motion.div>
 
-      <div className="container mx-auto px-6 py-12">
-        <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
-          <div className="flex space-x-2 overflow-x-auto pb-2">
-            {['all', 'sustainable', 'Recommended'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
-                  activeCategory === cat
-                    ? (cat === 'sustainable'
-                        ? 'bg-green-600'
-                        : cat === 'Recommended'
-                        ? 'bg-amber-500'
-                        : 'bg-teal-500') + ' text-white shadow-md'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                }`}
+        {/* Filters and Controls */}
+        <div className="container mx-auto px-6 py-8">
+          <motion.div
+            className="flex flex-wrap justify-between items-center mb-8 gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <div className="flex space-x-3 overflow-x-auto pb-2">
+              {[
+                { key: 'all', label: 'All Products', icon: null },
+                { key: 'sustainable', label: 'Eco-Friendly', icon: LeafIcon },
+                { key: 'Recommended', label: 'Recommended', icon: StarIcon },
+              ].map((cat) => (
+                <motion.button
+                  key={cat.key}
+                  onClick={() => setActiveCategory(cat.key)}
+                  className={`px-6 py-3 rounded-2xl text-sm font-medium whitespace-nowrap transition-all duration-300 flex items-center gap-2 ${
+                    activeCategory === cat.key
+                      ? (cat.key === 'sustainable'
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/25'
+                          : cat.key === 'Recommended'
+                          ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg shadow-yellow-500/25'
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25')
+                      : 'bg-white/10 backdrop-blur-xl text-gray-300 hover:bg-white/20 border border-white/20'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {cat.icon && <cat.icon className="w-4 h-4" />}
+                  {cat.label}
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <motion.button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/20 hover:bg-white/20 text-gray-300 transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
               >
-                <span className="flex items-center gap-1">
-                  {cat === 'sustainable' && <Leaf size={16} />}
-                  {cat === 'Recommended' && <Star size={16} />}
-                  {cat === 'all' ? 'All Products' : cat === 'sustainable' ? 'Eco-Friendly' : 'Recommended'}
-                </span>
-              </button>
-            ))}
-          </div>
+                <FunnelIcon className="w-4 h-4" />
+                <span>Sort: {sortOption.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
+                <ChevronDownIcon className={`w-4 h-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </motion.button>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center space-x-1 bg-gray-800 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-700 text-gray-300"
+              <AnimatePresence>
+                {showSortDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    className="absolute right-0 mt-2 w-48 z-10"
+                  >
+                    <GlassCard className="py-2">
+                      {['featured', 'price-low', 'price-high', 'rating', 'newest'].map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => {
+                            setSortOption(opt);
+                            setShowSortDropdown(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+                        >
+                          {opt.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </button>
+                      ))}
+                    </GlassCard>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          {/* Products Grid */}
+          {filteredProducts.length > 0 ? (
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
             >
-              <Filter size={16} />
-              <span>Sort: {sortOption.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
-              <ChevronDown size={16} className={`transition ${showSortDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showSortDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-10 border border-gray-700">
-                <div className="py-1">
-                  {['featured', 'price-low', 'price-high', 'rating', 'newest'].map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => {
-                        setSortOption(opt);
-                        setShowSortDropdown(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-700 text-gray-300"
-                    >
-                      {opt.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 relative"
-              >
-                <div className="absolute top-2 left-2 z-10 flex space-x-2">
-                  {product.best_seller && (
-                    <span className="bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded">
-                      Best Seller
-                    </span>
-                  )}
-                  {product.category === 'sustainable' && (
-                    <span className="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
-                      <Leaf size={12} className="mr-1" /> Eco
-                    </span>
-                  )}
-                </div>
-
-                <div className="relative h-48 overflow-hidden group">
-                  <img
-                    src={`http://127.0.0.1:5000/static/products/${product.image_path}`}
-                    alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-
-                <div className="p-5">
-                  <h3 className="font-semibold text-lg mb-1 truncate text-gray-100">{product.name}</h3>
-                  <p className="text-gray-400 text-sm mb-3 line-clamp-2">{product.description}</p>
-                  {product.rating && renderStars(product.rating)}
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xl font-bold text-green-400">₹{product.price}</span>
-                    {product.original_price && (
-                      <span className="text-sm text-gray-500 line-through">₹{product.original_price}</span>
-                    )}
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center border rounded-lg overflow-hidden border-gray-700">
-                      <button
-                        onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 1) - 1)}
-                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300"
-                      >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        max={product.inventory_amount}
-                        value={quantities[product.id] || 1}
-                        onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                        className="w-12 text-center bg-gray-800 text-gray-100 border-x border-gray-700"
-                      />
-                      <button
-                        onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 1) + 1)}
-                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300"
-                      >
-                        +
-                      </button>
+              {filteredProducts.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -10, scale: 1.02 }}
+                  className="group"
+                >
+                  <NeonCard className="overflow-hidden h-full flex flex-col" color="emerald">
+                    {/* Product Badges */}
+                    <div className="absolute top-3 left-3 z-10 flex flex-col space-y-2">
+                      {product.best_seller && (
+                        <span className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                          ⭐ Best Seller
+                        </span>
+                      )}
+                      {product.category === 'sustainable' && (
+                        <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-lg">
+                          <LeafIcon className="w-3 h-3 mr-1" /> Eco
+                        </span>
+                      )}
                     </div>
-                  </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button
-                      id={`add-to-cart-${product.id}`}
-                      onClick={() => handleAddToCart(product)}
-                      className="flex items-center justify-center gap-1 bg-gray-700 text-gray-100 hover:bg-green-600 px-3 py-2 rounded-lg font-medium transition duration-300"
-                    >
-                      <ShoppingCart size={16} /> Cart
-                    </button>
-                    <button
-                      onClick={() => handleBuyNow(product)}
-                      className="flex items-center justify-center gap-1 bg-green-600 text-white hover:bg-green-500 px-3 py-2 rounded-lg font-medium transition duration-300"
-                    >
-                      <Zap size={16} /> Buy
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <Search size={48} className="mx-auto text-gray-500 mb-4" />
-            <h3 className="text-xl font-medium text-gray-300">No products found</h3>
-            <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria</p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setActiveCategory('all');
-              }}
-              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-300"
+                    {/* Product Image */}
+                    <div className="relative h-48 overflow-hidden">
+                      <motion.img
+                        src={`http://127.0.0.1:5000/static/products/${product.image_path}`}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        whileHover={{ scale: 1.1 }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="p-6 flex-1 flex flex-col">
+                      <h3 className="font-bold text-lg mb-2 text-white group-hover:text-emerald-400 transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-gray-400 text-sm mb-3 flex-1 line-clamp-2">
+                        {product.description}
+                      </p>
+                      
+                      {product.rating && (
+                        <div className="mb-3">
+                          {renderStars(product.rating)}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold text-emerald-400">
+                            ₹{product.price}
+                          </span>
+                          {product.original_price && (
+                            <span className="text-sm text-gray-500 line-through">
+                              ₹{product.original_price}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quantity Selector */}
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="flex items-center bg-white/10 rounded-xl overflow-hidden border border-white/20">
+                          <button
+                            onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 1) - 1)}
+                            className="px-3 py-2 hover:bg-white/10 text-gray-300 transition-colors"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max={product.inventory_amount}
+                            value={quantities[product.id] || 1}
+                            onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                            className="w-16 text-center bg-transparent text-white border-x border-white/20 py-2 focus:outline-none"
+                          />
+                          <button
+                            onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 1) + 1)}
+                            className="px-3 py-2 hover:bg-white/10 text-gray-300 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <AnimatedButton
+                          id={`add-to-cart-${product.id}`}
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleAddToCart(product)}
+                          icon={<ShoppingCartIcon className="w-4 h-4" />}
+                          className="text-sm"
+                        >
+                          Cart
+                        </AnimatedButton>
+                        <AnimatedButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleBuyNow(product)}
+                          icon={<BoltIcon className="w-4 h-4" />}
+                          className="text-sm"
+                        >
+                          Buy
+                        </AnimatedButton>
+                      </div>
+                    </div>
+                  </NeonCard>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              className="text-center py-20"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
             >
-              Reset Filters
-            </button>
-          </div>
-        )}
+              <GlassCard className="max-w-md mx-auto p-8">
+                <MagnifyingGlassIcon className="w-16 h-16 mx-auto text-gray-500 mb-4" />
+                <h3 className="text-2xl font-bold text-white mb-2">No products found</h3>
+                <p className="text-gray-400 mb-6">Try adjusting your search or filter criteria</p>
+                <AnimatedButton
+                  variant="primary"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setActiveCategory('all');
+                  }}
+                  icon={<SparklesIcon className="w-4 h-4" />}
+                >
+                  Reset Filters
+                </AnimatedButton>
+              </GlassCard>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );
