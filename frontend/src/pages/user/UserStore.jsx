@@ -9,7 +9,7 @@ import {
   ShoppingCartIcon,
   BoltIcon,
   SparklesIcon,
-  LeafIcon
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
@@ -282,7 +282,7 @@ export default function UserStore() {
             <div className="flex space-x-3 overflow-x-auto pb-2">
               {[
                 { key: 'all', label: 'All Products', icon: null },
-                { key: 'sustainable', label: 'Eco-Friendly', icon: LeafIcon },
+                { key: 'sustainable', label: 'Eco-Friendly', icon: GlobeAltIcon },
                 { key: 'Recommended', label: 'Recommended', icon: StarIcon },
               ].map((cat) => (
                 <motion.button
@@ -370,7 +370,7 @@ export default function UserStore() {
                       )}
                       {product.category === 'sustainable' && (
                         <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-lg">
-                          <LeafIcon className="w-3 h-3 mr-1" /> Eco
+                          <GlobeAltIcon className="w-3 h-3 mr-1" /> Eco
                         </span>
                       )}
                     </div>
