@@ -136,13 +136,12 @@ export default function AdminTemplate() {
         </motion.button>
       </div>
 
-      {/* Sidebar - Fixed positioning for mobile, relative for desktop */}
+      {/* Sidebar */}
       <motion.div
         variants={sidebarVariants}
         animate={mobileMenuOpen ? 'open' : 'closed'}
         className="fixed inset-y-0 left-0 w-80 lg:relative lg:translate-x-0 z-40 lg:block"
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        style={{ display: 'block' }} // Force display
       >
         <GlassCard className="h-full p-6 rounded-none lg:rounded-r-3xl border-l-0">
           <div className="flex items-center justify-between mb-8 mt-5">
