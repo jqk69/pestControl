@@ -16,7 +16,8 @@ import {
   TagIcon,
   BookOpenIcon,
   TrendingUpIcon,
-  FireIcon
+  FireIcon,
+  BugAntIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
@@ -167,11 +168,12 @@ export default function UserBlog() {
     }
     
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(blog =>
-        blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        blog.title.toLowerCase().includes(searchLower) ||
+        blog.excerpt.toLowerCase().includes(searchLower) ||
+        blog.author.toLowerCase().includes(searchLower) ||
+        (blog.tags && blog.tags.some(tag => tag.toLowerCase().includes(searchLower)))
       );
     }
 
@@ -268,7 +270,11 @@ export default function UserBlog() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <motion.div
+            className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
           <p className="text-white text-xl">Loading amazing content...</p>
         </motion.div>
       </div>
@@ -551,7 +557,7 @@ export default function UserBlog() {
 
                           {/* Tags */}
                           <div className="flex flex-wrap gap-2 mb-4">
-                            {blog.tags.slice(0, 3).map(tag => (
+                            {blog.tags && blog.tags.slice(0, 3).map(tag => (
                               <span key={tag} className="bg-white/10 text-gray-300 text-xs px-2 py-1 rounded-full flex items-center">
                                 <TagIcon className="w-3 h-3 mr-1" />
                                 {tag}
@@ -654,6 +660,23 @@ export default function UserBlog() {
                   Categories
                 </h3>
                 <div className="space-y-2">
+                  <motion.button
+                    onClick={() => setCategoryFilter('all')}
+                    className={`w-full text-left p-3 rounded-xl transition-all ${
+                      categoryFilter === 'all'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'hover:bg-white/5 text-gray-300 hover:text-white'
+                    }`}
+                    whileHover={{ x: 5 }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>All Categories</span>
+                      <span className="text-xs bg-white/10 px-2 py-1 rounded-full">
+                        {blogs.length}
+                      </span>
+                    </div>
+                  </motion.button>
+                  
                   {categories.map(category => {
                     const count = blogs.filter(blog => blog.category === category).length;
                     return (
@@ -705,8 +728,47 @@ export default function UserBlog() {
                 </div>
               </NeonCard>
             </motion.div>
+
+            {/* Popular Tags */}
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <TagIcon className="w-5 h-5 text-emerald-400" />
+                  Popular Tags
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {['prevention', 'natural', 'eco-friendly', 'ants', 'termites', 'rodents', 'diy', 'professional', 'seasonal'].map(tag => (
+                    <span 
+                      key={tag} 
+                      className="bg-white/10 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400 text-sm px-3 py-1 rounded-full cursor-pointer transition-colors"
+                      onClick={() => setSearchTerm(tag)}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </GlassCard>
+            </motion.div>
           </div>
         </div>
+        
+        {/* Call to Action */}
+        <motion.div variants={itemVariants}>
+          <NeonCard className="p-8 text-center" color="blue">
+            <h2 className="text-3xl font-bold text-white mb-4">Need Professional Pest Control?</h2>
+            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+              Our expert technicians are ready to help you implement the strategies discussed in our articles
+            </p>
+            <AnimatedButton
+              variant="neon"
+              size="lg"
+              onClick={() => navigate('/user/services')}
+              icon={<BugAntIcon className="w-5 h-5" />}
+            >
+              Book a Service
+            </AnimatedButton>
+          </NeonCard>
+        </motion.div>
       </motion.div>
     </div>
   );
