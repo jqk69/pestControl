@@ -14,7 +14,8 @@ import {
   BuildingStorefrontIcon,
   ClockIcon,
   UserIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -110,6 +111,7 @@ export default function UserTemplate() {
   const menuItems = [
     { name: 'Dashboard', path: 'dashboard', icon: HomeIcon },
     { name: 'Profile', path: 'profile', icon: UserIcon },
+    { name: 'Blog', path: 'blog', icon: DocumentTextIcon },
   ];
 
   const serviceItems = [
@@ -341,6 +343,7 @@ export default function UserTemplate() {
                   {[
                     { name: 'Store', path: 'store' },
                     { name: 'Services', path: 'services' },
+                    { name: 'Blog', path: 'blog' },
                   ].map((item) => (
                     <motion.a
                       key={item.name}

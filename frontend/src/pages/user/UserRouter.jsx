@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import UserTemplate from './UserTemplate';
 import UserStore from './UserStore';
 import UserService from './UserService';
-import UserDashboard from './USerDashboard';
+import UserDashboard from './UserDashboard';
 import UserServiceDetail from './UserServiceDetail';
 import UserSeviceCart from './UserSeviceCart';
 import UserPayment from './UserPayment';
@@ -12,6 +12,8 @@ import UserCartPage from './UserCartPage';
 import UserCheckoutPage from './UserCheckoutPage';
 import UserOrders from './UserOrders';
 import UserOtherOptions from './UserOtherOptions';
+import UserBlog from './UserBlog';
+import UserViewBlog from './UserViewBlog';
 
 export default function UserRouter() {
   const navigate = useNavigate();
@@ -49,9 +51,11 @@ export default function UserRouter() {
         <Route path="service/payment/:id" element={<UserPayment/>}/>
         <Route path="service-history" element={<UserSeviceCart/>}/>
         <Route path="cart" element={<UserCartPage/>}/>
-        <Route path="cart/checkout" element={<UserCheckoutPage/>}/>
+        <Route path="checkout" element={<UserCheckoutPage/>}/>
         <Route path="orders" element={<UserOrders/>}/>
         <Route path="other" element={<UserOtherOptions/>}/>
+        <Route path="blog" element={<UserBlog/>}/>
+        <Route path="blog/:id" element={<UserViewBlog/>}/>
       </Route>
     </Routes>
   );
