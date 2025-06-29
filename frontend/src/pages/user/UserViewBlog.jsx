@@ -182,7 +182,7 @@ export default function UserViewBlog() {
     } else {
       try {
         await navigator.clipboard.writeText(shareData.url);
-        // You could add a toast notification here
+        alert('Link copied to clipboard!');
       } catch (err) {
         console.error('Failed to copy link');
       }
@@ -237,7 +237,11 @@ export default function UserViewBlog() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <motion.div
+            className="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
           <p className="text-white text-xl">Loading article...</p>
         </motion.div>
       </div>
@@ -298,7 +302,7 @@ export default function UserViewBlog() {
                 <span className="bg-emerald-500/20 text-emerald-400 text-sm font-medium px-3 py-1 rounded-full">
                   {blog.category}
                 </span>
-                {blog.tags.slice(0, 3).map(tag => (
+                {blog.tags && blog.tags.slice(0, 3).map(tag => (
                   <span key={tag} className="bg-white/10 text-gray-300 text-xs px-2 py-1 rounded-full flex items-center">
                     <TagIcon className="w-3 h-3 mr-1" />
                     {tag}
@@ -502,7 +506,7 @@ export default function UserViewBlog() {
                   Tags
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {blog.tags.map(tag => (
+                  {blog.tags && blog.tags.map(tag => (
                     <span 
                       key={tag} 
                       className="bg-white/10 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400 text-sm px-3 py-1 rounded-full cursor-pointer transition-colors"

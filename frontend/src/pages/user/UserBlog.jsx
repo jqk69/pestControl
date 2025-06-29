@@ -150,18 +150,79 @@ export default function UserBlog() {
         }
       ];
       
-      setBlogs(response.data.blogs || mockBlogs);
-      setFeaturedPost(mockBlogs.find(blog => blog.featured) || mockBlogs[0]);
+      // Use API response if available, otherwise use mock data
+      const blogData = response.data?.blogs?.length > 0 ? response.data.blogs : mockBlogs;
+      setBlogs(blogData);
+      setFeaturedPost(blogData.find(blog => blog.featured) || blogData[0]);
     } catch (error) {
       console.error('Error fetching blogs:', error);
-      setBlogs([]);
+      
+      // Fallback to mock data if API fails
+      const mockBlogs = [
+        {
+          id: 1,
+          title: "10 Natural Ways to Keep Ants Away from Your Home",
+          excerpt: "Discover eco-friendly methods to prevent ant infestations without harmful chemicals. Learn about natural repellents and prevention strategies.",
+          content: "Full content here...",
+          author: "Dr. Sarah Johnson",
+          category: "Natural Solutions",
+          date: "2024-01-15",
+          readTime: "5 min read",
+          likes: 124,
+          views: 1256,
+          featured: true,
+          trending: true,
+          tags: ["natural", "ants", "eco-friendly"],
+          image: "https://images.pexels.com/photos/1108572/pexels-photo-1108572.jpeg?auto=compress&cs=tinysrgb&w=800"
+        },
+        {
+          id: 2,
+          title: "Understanding Termite Behavior and Colony Structure",
+          excerpt: "Learn about termite colonies and how to identify early signs of infestation before they cause serious damage to your property.",
+          content: "Full content here...",
+          author: "Mike Chen",
+          category: "Education",
+          date: "2024-01-12",
+          readTime: "8 min read",
+          likes: 89,
+          views: 2103,
+          featured: false,
+          trending: false,
+          tags: ["termites", "education", "prevention"],
+          image: "https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=800"
+        },
+        {
+          id: 3,
+          title: "Seasonal Pest Prevention: Year-Round Protection Tips",
+          excerpt: "Prepare your home for different seasons with these comprehensive preventive measures and seasonal pest control strategies.",
+          content: "Full content here...",
+          author: "Lisa Rodriguez",
+          category: "Prevention",
+          date: "2024-01-10",
+          readTime: "6 min read",
+          likes: 156,
+          views: 1789,
+          featured: false,
+          trending: true,
+          tags: ["seasonal", "prevention", "tips"],
+          image: "https://images.pexels.com/photos/6195122/pexels-photo-6195122.jpeg?auto=compress&cs=tinysrgb&w=800"
+        }
+      ];
+      
+      setBlogs(mockBlogs);
+      setFeaturedPost(mockBlogs[0]);
     } finally {
       setLoading(false);
     }
   };
 
   const filterBlogs = () => {
-    let filtered = blogs.filter(blog => !blog.featured); // Exclude featured post from main grid
+    let filtered = [...blogs];
+    
+    // Remove featured post from main grid if it exists
+    if (featuredPost) {
+      filtered = filtered.filter(blog => blog.id !== featuredPost.id);
+    }
     
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(blog => blog.category === categoryFilter);
@@ -210,6 +271,14 @@ export default function UserBlog() {
         ? { ...blog, likes: blog.likes + (newLikedPosts.has(blogId) ? 1 : -1) }
         : blog
     ));
+    
+    // If the featured post is liked, update it too
+    if (featuredPost && featuredPost.id === blogId) {
+      setFeaturedPost({
+        ...featuredPost,
+        likes: featuredPost.likes + (newLikedPosts.has(blogId) ? 1 : -1)
+      });
+    }
   };
 
   const handleShare = async (blog) => {
@@ -228,14 +297,17 @@ export default function UserBlog() {
     } else {
       try {
         await navigator.clipboard.writeText(shareData.url);
-        // You could add a toast notification here
+        alert('Link copied to clipboard!');
       } catch (err) {
         console.error('Failed to copy link');
       }
     }
   };
 
+  // Get unique categories from blogs
   const categories = [...new Set(blogs.map(blog => blog.category))];
+  
+  // Get trending blogs
   const trendingBlogs = blogs.filter(blog => blog.trending).slice(0, 3);
 
   const containerVariants = {
@@ -464,7 +536,7 @@ export default function UserBlog() {
                   <ExclamationTriangleIcon className="w-20 h-20 text-gray-500 mx-auto mb-6" />
                   <h2 className="text-3xl font-bold text-white mb-4">No articles found</h2>
                   <p className="text-gray-400 text-lg">
-                    {blogs.length === 0 
+                    {blogs.length <= 1 
                       ? 'No blog posts available at the moment'
                       : 'Try adjusting your search or filter criteria'
                     }
