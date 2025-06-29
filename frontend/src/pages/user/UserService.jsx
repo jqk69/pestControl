@@ -17,7 +17,8 @@ import {
   ExclamationTriangleIcon,
   ArrowRightIcon,
   MapPinIcon,
-  BeakerIcon
+  BeakerIcon,
+  BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
 import { AnimatedButton } from '../../components/ui/AnimatedButton';
