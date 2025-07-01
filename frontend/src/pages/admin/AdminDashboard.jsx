@@ -15,7 +15,10 @@ import {
   ExclamationTriangleIcon,
   EyeIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  BuildingStorefrontIcon,
+  DocumentTextIcon,
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline';
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
 import { AnimatedButton } from '../../components/ui/AnimatedButton';
@@ -28,6 +31,14 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [dashboardStats, setDashboardStats] = useState({
+    totalUsers: 0,
+    technicians: 0,
+    regularUsers: 0,
+    activeUsers: 0,
+    pendingRequests: 0,
+    totalOrders: 0
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,9 +65,11 @@ const AdminDashboard = () => {
         if (response.data && response.data.users) {
           setUsers(response.data.users);
           setFilteredUsers(response.data.users);
+          updateDashboardStats(response.data.users);
         } else if (Array.isArray(response.data)) {
           setUsers(response.data);
           setFilteredUsers(response.data);
+          updateDashboardStats(response.data);
         } else {
           console.error('Unexpected response format:', response.data);
           setError('Invalid response format from server');
@@ -71,6 +84,17 @@ const AdminDashboard = () => {
 
     fetchUsers();
   }, []);
+
+  const updateDashboardStats = (userData) => {
+    setDashboardStats({
+      totalUsers: userData.length,
+      technicians: userData.filter(u => u.role === 'technician').length,
+      regularUsers: userData.filter(u => u.role === 'user').length,
+      activeUsers: userData.filter(u => u.status === 'active').length,
+      pendingRequests: Math.floor(Math.random() * 10), // Mock data
+      totalOrders: Math.floor(Math.random() * 100) // Mock data
+    });
+  };
 
   useEffect(() => {
     let filtered = users;
@@ -106,6 +130,7 @@ const AdminDashboard = () => {
         }
       });
       setUsers(users.filter(user => user.id !== userId));
+      updateDashboardStats(users.filter(user => user.id !== userId));
     } catch (err) {
       setError('Failed to delete user');
     }
@@ -184,9 +209,9 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  User Management
+                  Admin Dashboard
                 </h1>
-                <p className="text-gray-300 mt-2">Manage and monitor all system users</p>
+                <p className="text-gray-300 mt-2">Manage users, services, and system settings</p>
               </div>
               <div className="flex items-center gap-4">
                 <AnimatedButton
@@ -201,37 +226,51 @@ const AdminDashboard = () => {
           </GlassCard>
         </motion.div>
 
-        {/* Stats Cards */}
+        {/* Dashboard Overview */}
         <motion.div variants={itemVariants}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {[
               { 
                 label: 'Total Users', 
-                value: users.length, 
+                value: dashboardStats.totalUsers, 
                 color: 'blue',
                 icon: UsersIcon,
                 description: 'All registered users'
               },
               { 
                 label: 'Technicians', 
-                value: users.filter(u => u.role === 'technician').length, 
+                value: dashboardStats.technicians, 
                 color: 'emerald',
                 icon: CogIcon,
                 description: 'Active technicians'
               },
               { 
                 label: 'Regular Users', 
-                value: users.filter(u => u.role === 'user').length, 
+                value: dashboardStats.regularUsers, 
                 color: 'purple',
                 icon: UsersIcon,
                 description: 'Customer accounts'
               },
               { 
                 label: 'Active Users', 
-                value: users.filter(u => u.status === 'active').length, 
+                value: dashboardStats.activeUsers, 
                 color: 'emerald',
                 icon: CheckCircleIcon,
                 description: 'Currently active'
+              },
+              { 
+                label: 'Pending Requests', 
+                value: dashboardStats.pendingRequests, 
+                color: 'yellow',
+                icon: DocumentTextIcon,
+                description: 'Awaiting approval'
+              },
+              { 
+                label: 'Total Orders', 
+                value: dashboardStats.totalOrders, 
+                color: 'orange',
+                icon: BuildingStorefrontIcon,
+                description: 'Processed orders'
               },
             ].map((stat, index) => (
               <motion.div
@@ -252,10 +291,75 @@ const AdminDashboard = () => {
           </div>
         </motion.div>
 
+        {/* Quick Access */}
+        <motion.div variants={itemVariants}>
+          <GlassCard className="p-6">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <ChartBarIcon className="w-6 h-6 text-blue-400" />
+              Quick Access
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[
+                { 
+                  label: 'Manage Store', 
+                  path: '/admin/store',
+                  color: 'blue',
+                  icon: BuildingStorefrontIcon,
+                  description: 'Manage products and inventory'
+                },
+                { 
+                  label: 'Manage Services', 
+                  path: '/admin/services',
+                  color: 'emerald',
+                  icon: ShieldCheckIcon,
+                  description: 'Configure service offerings'
+                },
+                { 
+                  label: 'View Reports', 
+                  path: '/admin/reports',
+                  color: 'purple',
+                  icon: ChartBarIcon,
+                  description: 'Business analytics and insights'
+                },
+                { 
+                  label: 'Leave Management', 
+                  path: '/admin/leave-management',
+                  color: 'orange',
+                  icon: CalendarDaysIcon,
+                  description: 'Manage technician leaves'
+                },
+              ].map((item) => (
+                <motion.div
+                  key={item.label}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  className="group"
+                >
+                  <div 
+                    className={`p-6 bg-${item.color}-500/10 rounded-xl border border-${item.color}-500/30 hover:bg-${item.color}-500/20 transition-all duration-300 cursor-pointer h-full`}
+                    onClick={() => navigate(item.path)}
+                  >
+                    <item.icon className={`w-10 h-10 text-${item.color}-400 mb-4`} />
+                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
+                      {item.label}
+                    </h3>
+                    <p className="text-gray-400 text-sm">{item.description}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </GlassCard>
+        </motion.div>
+
         {/* Filters */}
         <motion.div variants={itemVariants}>
           <GlassCard className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <UsersIcon className="w-6 h-6 text-blue-400" />
+              User Management
+            </h2>
+            
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
               <div className="flex-1 relative">
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -280,116 +384,114 @@ const AdminDashboard = () => {
                 </select>
               </div>
             </div>
-          </GlassCard>
-        </motion.div>
 
-        {/* Users Table */}
-        <motion.div variants={itemVariants}>
-          <GlassCard className="overflow-hidden">
-            {filteredUsers.length === 0 ? (
-              <div className="p-12 text-center">
-                <UsersIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">No users found</h3>
-                <p className="text-gray-400">
-                  {users.length === 0 ? 'No users in the system yet' : 'No users match your search criteria'}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-white/5 border-b border-white/10">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Contact</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/10">
-                    <AnimatePresence>
-                      {filteredUsers.map((user, index) => (
-                        <motion.tr
-                          key={user.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="hover:bg-white/5 transition-colors"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                {(user.username || user.name || 'U').charAt(0).toUpperCase()}
+            {/* Users Table */}
+            <div className="overflow-hidden rounded-xl border border-white/10">
+              {filteredUsers.length === 0 ? (
+                <div className="p-12 text-center bg-white/5">
+                  <UsersIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2">No users found</h3>
+                  <p className="text-gray-400">
+                    {users.length === 0 ? 'No users in the system yet' : 'No users match your search criteria'}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-white/5 border-b border-white/10">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">User</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Contact</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Role</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10">
+                      <AnimatePresence>
+                        {filteredUsers.map((user, index) => (
+                          <motion.tr
+                            key={user.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="hover:bg-white/5 transition-colors"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                  {(user.username || user.name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-white">{user.username || 'N/A'}</div>
+                                  <div className="text-sm text-gray-400">{user.name || 'No name'}</div>
+                                </div>
                               </div>
-                              <div>
-                                <div className="text-sm font-medium text-white">{user.username || 'N/A'}</div>
-                                <div className="text-sm text-gray-400">{user.name || 'No name'}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-white">{user.email || 'No email'}</div>
-                            <div className="text-sm text-gray-400">{user.phone || 'No phone'}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              user.role === 'admin' 
-                                ? 'bg-red-100 text-red-800' 
-                                : user.role === 'technician' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {user.role || 'user'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              {(user.status || 'active') === 'active' ? (
-                                <CheckCircleIcon className="w-5 h-5 text-green-400 mr-2" />
-                              ) : (
-                                <XCircleIcon className="w-5 h-5 text-red-400 mr-2" />
-                              )}
-                              <span className={`text-sm ${(user.status || 'active') === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                                {user.status || 'active'}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-white">{user.email || 'No email'}</div>
+                              <div className="text-sm text-gray-400">{user.phone || 'No phone'}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                user.role === 'admin' 
+                                  ? 'bg-purple-100 text-purple-800' 
+                                  : user.role === 'technician' 
+                                  ? 'bg-emerald-100 text-emerald-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {user.role || 'user'}
                               </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center space-x-2">
-                              <AnimatedButton
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(user.id)}
-                                icon={<EyeIcon className="w-4 h-4" />}
-                              >
-                                View
-                              </AnimatedButton>
-                              <AnimatedButton
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(user.id)}
-                                icon={<PencilIcon className="w-4 h-4" />}
-                              >
-                                Edit
-                              </AnimatedButton>
-                              <AnimatedButton
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDelete(user.id)}
-                                icon={<TrashIcon className="w-4 h-4" />}
-                              >
-                                Delete
-                              </AnimatedButton>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
-              </div>
-            )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                {(user.status || 'active') === 'active' ? (
+                                  <CheckCircleIcon className="w-5 h-5 text-emerald-400 mr-2" />
+                                ) : (
+                                  <XCircleIcon className="w-5 h-5 text-red-400 mr-2" />
+                                )}
+                                <span className={`text-sm ${(user.status || 'active') === 'active' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {user.status || 'active'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center space-x-2">
+                                <AnimatedButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(user.id)}
+                                  icon={<EyeIcon className="w-4 h-4" />}
+                                >
+                                  View
+                                </AnimatedButton>
+                                <AnimatedButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(user.id)}
+                                  icon={<PencilIcon className="w-4 h-4" />}
+                                >
+                                  Edit
+                                </AnimatedButton>
+                                <AnimatedButton
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleDelete(user.id)}
+                                  icon={<TrashIcon className="w-4 h-4" />}
+                                >
+                                  Delete
+                                </AnimatedButton>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </GlassCard>
         </motion.div>
       </motion.div>
