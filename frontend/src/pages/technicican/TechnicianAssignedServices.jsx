@@ -15,10 +15,10 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-routing-machine';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-routing-machine";
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
 import { AnimatedButton } from '../../components/ui/AnimatedButton';
 import { FloatingOrbs } from '../../components/ui/FloatingElements';
@@ -145,8 +145,12 @@ export default function TechnicianAssignedServices() {
   };
   
   const handleViewLocation = (service) => {
-    setSelectedService(service);
-    setShowMapModal(true);
+    if (service.location_lat && service.location_lng) {
+      setSelectedService(service);
+      setShowMapModal(true);
+    } else {
+      toast.error('Location information not available for this service');
+    }
   };
 
   const closeMapModal = () => {
@@ -313,7 +317,7 @@ export default function TechnicianAssignedServices() {
                                         e.stopPropagation();
                                         handleViewLocation(item);
                                       }}
-                                      icon={<MapPinIcon className="w-3 h-3" />}
+                                      className="ml-2"
                                     >
                                       Map
                                     </AnimatedButton>
@@ -390,75 +394,83 @@ export default function TechnicianAssignedServices() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="w-full max-w-4xl"
+              className="w-full max-w-4xl h-[600px] relative"
             >
-              <GlassCard className="p-6 relative">
+              <GlassCard className="h-full relative overflow-hidden">
                 <button
+                  className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-white transition-colors"
                   onClick={closeMapModal}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                 >
-                  ✕
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
-                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                  <MapPinIcon className="w-6 h-6 text-orange-400" />
-                  Service Location
-                </h2>
                 
-                <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-6">
-                  <h3 className="text-lg font-medium text-white mb-2">{selectedService.service_name}</h3>
-                  <p className="text-gray-300 text-sm mb-2">
-                    <strong>Date:</strong> {new Date(selectedService.booking_date).toLocaleString()}
-                  </p>
-                  <p className="text-gray-300 text-sm">
-                    <strong>Status:</strong> <span className="capitalize">{selectedService.status}</span>
-                  </p>
-                </div>
-                
-                <div className="h-[400px] rounded-xl overflow-hidden border border-white/20 shadow-lg">
-                  <MapContainer
-                    center={[selectedService.location_lat, selectedService.location_lng]}
-                    zoom={13}
-                    style={{ height: '100%', width: '100%' }}
-                  >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    <Marker position={[selectedService.location_lat, selectedService.location_lng]}>
-                      <Popup>
-                        <div className="text-center">
-                          <strong>Service Location</strong><br />
-                          {selectedService.service_name}
-                        </div>
-                      </Popup>
-                    </Marker>
-                    
-                    {technicianLocation && (
-                      <>
-                        <Marker position={technicianLocation}>
-                          <Popup>
-                            <div className="text-center">
-                              <strong>Your Location</strong><br />
-                              Current position
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <RouteControl from={technicianLocation} to={[selectedService.location_lat, selectedService.location_lng]} />
-                      </>
-                    )}
-                  </MapContainer>
-                </div>
-                
-                <div className="mt-6 flex justify-end">
-                  <AnimatedButton
-                    variant="ghost"
-                    size="md"
-                    onClick={closeMapModal}
-                    icon={<XMarkIcon className="w-4 h-4" />}
-                  >
-                    Close
-                  </AnimatedButton>
+                <div className="p-6 h-full flex flex-col">
+                  <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                    <MapPinIcon className="w-6 h-6 text-orange-400" />
+                    Service Location
+                  </h2>
+                  
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-4">
+                    <h3 className="text-lg font-medium text-white mb-2">{selectedService.service_name}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <p className="text-gray-300">
+                        <strong>Date:</strong> {new Date(selectedService.booking_date).toLocaleString()}
+                      </p>
+                      <p className="text-gray-300">
+                        <strong>Status:</strong> <span className="capitalize">{selectedService.status}</span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 rounded-xl overflow-hidden">
+                    <MapContainer
+                      center={[selectedService.location_lat, selectedService.location_lng]}
+                      zoom={13}
+                      style={{ height: '100%', width: '100%' }}
+                    >
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      />
+                      <Marker position={[selectedService.location_lat, selectedService.location_lng]}>
+                        <Popup>
+                          <div className="text-center">
+                            <strong>Service Location</strong><br />
+                            {selectedService.service_name}
+                          </div>
+                        </Popup>
+                      </Marker>
+                      
+                      {technicianLocation && (
+                        <>
+                          <Marker position={technicianLocation}>
+                            <Popup>
+                              <div className="text-center">
+                                <strong>Your Location</strong><br />
+                                Current position
+                              </div>
+                            </Popup>
+                          </Marker>
+                          
+                          <RouteControl 
+                            from={technicianLocation} 
+                            to={[selectedService.location_lat, selectedService.location_lng]} 
+                          />
+                        </>
+                      )}
+                    </MapContainer>
+                  </div>
+                  
+                  {technicianLocation && (
+                    <div className="mt-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                      <div className="flex items-center gap-2 text-gray-300">
+                        <MapPinIcon className="w-5 h-5 text-orange-400" />
+                        <span>
+                          Route to service location is displayed on the map
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </GlassCard>
             </motion.div>
