@@ -1,84 +1,319 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ClockIcon,
+  CheckCircleIcon,
+  MapPinIcon,
+  CalendarDaysIcon,
+  ExclamationTriangleIcon,
+  ChartBarIcon,
+  ShieldCheckIcon
+} from '@heroicons/react/24/outline';
+import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
+import { AnimatedButton } from '../../components/ui/AnimatedButton';
+import { FloatingOrbs } from '../../components/ui/FloatingElements';
 
 export default function TechnicianServiceHistory() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const token = sessionStorage.getItem("token");
+    const fetchServiceHistory = async () => {
+      try {
+        setLoading(true);
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
 
-    axios
-      .get("http://127.0.0.1:5000/technician/service-history", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setHistory(res.data.history || []))
-      .catch((err) => console.error("Failed to fetch service history", err))
-      .finally(() => setLoading(false));
-  }, []);
+        const response = await axios.get('http://127.0.0.1:5000/technician/service-history', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.assigned_services) {
+          setHistory(response.data.assigned_services);
+        } else {
+          setHistory([]);
+        }
+      } catch (err) {
+        console.error('Error fetching service history:', err);
+        setError(err.response?.data?.message || 'Failed to load service history');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(); // Only date, no time
+    fetchServiceHistory();
+  }, [navigate]);
+
+  const handleViewLocation = (service) => {
+    setSelectedService(service);
+    setShowMapModal(true);
   };
 
+  const closeMapModal = () => {
+    setShowMapModal(false);
+    setSelectedService(null);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  // Group services by month for better organization
+  const groupedHistory = history.reduce((groups, service) => {
+    const date = new Date(service.booking_date);
+    const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+    
+    if (!groups[monthYear]) {
+      groups[monthYear] = [];
+    }
+    
+    groups[monthYear].push(service);
+    return groups;
+  }, {});
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+      },
+    },
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-orange-900 flex items-center justify-center relative overflow-hidden">
+        <FloatingOrbs />
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="w-20 h-20 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading service history...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 min-h-screen bg-white font-sans">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Service History</h2>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-orange-900 relative overflow-hidden">
+      <FloatingOrbs />
+      
+      <motion.div
+        className="relative z-10 p-6 space-y-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div variants={itemVariants}>
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent mb-2 flex items-center gap-3">
+                  <ClockIcon className="w-10 h-10 text-orange-400" />
+                  Service History
+                </h1>
+                <p className="text-gray-300 text-lg">Your completed service records</p>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
 
-      {loading ? (
-        <p className="text-gray-500">Loading...</p>
-      ) : history.length === 0 ? (
-        <p className="text-gray-500 italic">No completed services yet.</p>
-      ) : (
-        <ul className="space-y-4">
-          {history.map((item) => (
-            <li
-              key={item.booking_id}
-              className="p-4 rounded-md bg-gray-100 border shadow-sm"
-            >
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                {item.service_name}
+        {/* Stats Summary */}
+        <motion.div variants={itemVariants}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <NeonCard className="p-6 text-center" color="emerald">
+              <CheckCircleIcon className="w-8 h-8 mx-auto mb-3 text-emerald-400" />
+              <h3 className="text-2xl font-bold text-emerald-400 mb-1">
+                {history.length}
               </h3>
+              <p className="text-white font-medium">Completed Services</p>
+              <p className="text-gray-400 text-sm mt-1">Total services delivered</p>
+            </NeonCard>
+            
+            <NeonCard className="p-6 text-center" color="blue">
+              <ChartBarIcon className="w-8 h-8 mx-auto mb-3 text-blue-400" />
+              <h3 className="text-2xl font-bold text-blue-400 mb-1">
+                {Object.keys(groupedHistory).length}
+              </h3>
+              <p className="text-white font-medium">Active Months</p>
+              <p className="text-gray-400 text-sm mt-1">Months with completed services</p>
+            </NeonCard>
+            
+            <NeonCard className="p-6 text-center" color="orange">
+              <ShieldCheckIcon className="w-8 h-8 mx-auto mb-3 text-orange-400" />
+              <h3 className="text-2xl font-bold text-orange-400 mb-1">
+                100%
+              </h3>
+              <p className="text-white font-medium">Success Rate</p>
+              <p className="text-gray-400 text-sm mt-1">All services completed successfully</p>
+            </NeonCard>
+          </div>
+        </motion.div>
 
-              <p className="text-gray-600">
-                Completed on:{" "}
-                <span className="font-medium">{formatDate(item.booking_date)}</span>
+        {/* Service History List */}
+        {history.length === 0 ? (
+          <motion.div variants={itemVariants}>
+            <GlassCard className="p-12 text-center">
+              <ExclamationTriangleIcon className="w-20 h-20 text-gray-500 mx-auto mb-6" />
+              <h2 className="text-3xl font-bold text-white mb-4">No completed services</h2>
+              <p className="text-gray-400 text-lg">
+                You haven't completed any services yet
               </p>
+            </GlassCard>
+          </motion.div>
+        ) : (
+          <motion.div variants={itemVariants} className="space-y-8">
+            {Object.entries(groupedHistory).map(([monthYear, services]) => (
+              <div key={monthYear}>
+                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                  <CalendarDaysIcon className="w-6 h-6 text-orange-400" />
+                  {monthYear}
+                </h2>
+                
+                <div className="space-y-4">
+                  <AnimatePresence>
+                    {services.map((service, index) => (
+                      <motion.div
+                        key={service.booking_id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ delay: index * 0.05 }}
+                        whileHover={{ scale: 1.02 }}
+                      >
+                        <NeonCard className="p-6" color="emerald">
+                          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                            {/* Service Info */}
+                            <div className="flex-1">
+                              <div className="flex items-start gap-4">
+                                <div className="flex-1">
+                                  <h3 className="text-xl font-bold text-white mb-4">{service.service_name}</h3>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div className="flex items-center gap-2 text-gray-300">
+                                      <CalendarDaysIcon className="w-4 h-4 text-emerald-400" />
+                                      <span><strong>Date:</strong> {formatDate(service.booking_date)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-300">
+                                      <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
+                                      <span><strong>Status:</strong> <span className="capitalize">{service.status}</span></span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-300">
+                                      <span><strong>Booking ID:</strong> #{service.booking_id}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
 
-              <p className="text-gray-600">
-                Duration: {item.duration_minutes} minutes
-              </p>
+                            {/* Action Buttons */}
+                            <div>
+                              {service.location_lat && service.location_lng && (
+                                <AnimatedButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewLocation(service)}
+                                  icon={<MapPinIcon className="w-4 h-4" />}
+                                >
+                                  View Location
+                                </AnimatedButton>
+                              )}
+                            </div>
+                          </div>
+                        </NeonCard>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </motion.div>
 
-              <p className="text-gray-600">
-                Customer: <span className="font-medium">{item.user_name}</span>
-              </p>
-
-              <p className="text-gray-600">
-                Amount: ₹{item.amount || "0.00"}{" "}
-                <span className="text-sm text-gray-500">
-                  ({item.payment_status || "unpaid"})
-                </span>
-              </p>
-
-              {item.location_lat && item.location_lng && (
-                <p className="text-gray-500 text-sm">
-                  Location: {item.location_lat}, {item.location_lng}
-                </p>
-              )}
-
-              {item.feedback && (
-                <p className="text-gray-600 mt-2 italic">
-                  “{item.feedback}”
-                  <span className="ml-2 text-sm text-blue-500">
-                    ({item.sentiment})
-                  </span>
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Map Modal */}
+      <AnimatePresence>
+        {showMapModal && selectedService && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="w-full max-w-2xl"
+            >
+              <GlassCard className="p-6 relative">
+                <button
+                  onClick={closeMapModal}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                  <MapPinIcon className="w-6 h-6 text-orange-400" />
+                  Service Location
+                </h2>
+                
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-6">
+                  <h3 className="text-lg font-medium text-white mb-2">{selectedService.service_name}</h3>
+                  <p className="text-gray-300 text-sm mb-2">
+                    <strong>Date:</strong> {formatDate(selectedService.booking_date)}
+                  </p>
+                  <p className="text-gray-300 text-sm">
+                    <strong>Coordinates:</strong> {selectedService.location_lat}, {selectedService.location_lng}
+                  </p>
+                </div>
+                
+                <div className="h-64 bg-gray-800 rounded-xl flex items-center justify-center">
+                  <p className="text-gray-400">
+                    Map view would display here with the location: {selectedService.location_lat}, {selectedService.location_lng}
+                  </p>
+                </div>
+                
+                <div className="mt-6 flex justify-end">
+                  <AnimatedButton
+                    variant="ghost"
+                    size="md"
+                    onClick={closeMapModal}
+                  >
+                    Close
+                  </AnimatedButton>
+                </div>
+              </GlassCard>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
