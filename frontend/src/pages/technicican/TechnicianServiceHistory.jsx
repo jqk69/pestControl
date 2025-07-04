@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClockIcon,
+  XMarkIcon,
   CheckCircleIcon,
   MapPinIcon,
   CalendarDaysIcon,
@@ -11,9 +12,20 @@ import {
   ChartBarIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
 import { AnimatedButton } from '../../components/ui/AnimatedButton';
 import { FloatingOrbs } from '../../components/ui/FloatingElements';
+
+// Icons fix for markers
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+});
 
 export default function TechnicianServiceHistory() {
   const [history, setHistory] = useState([]);
@@ -295,9 +307,24 @@ export default function TechnicianServiceHistory() {
                 </div>
                 
                 <div className="h-64 bg-gray-800 rounded-xl flex items-center justify-center">
-                  <p className="text-gray-400">
-                    Map view would display here with the location: {selectedService.location_lat}, {selectedService.location_lng}
-                  </p>
+                  <MapContainer
+                    center={[selectedService.location_lat, selectedService.location_lng]}
+                    zoom={13}
+                    style={{ height: '100%', width: '100%', borderRadius: '0.75rem' }}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <Marker position={[selectedService.location_lat, selectedService.location_lng]}>
+                      <Popup>
+                        <div className="text-center">
+                          <strong>Service Location</strong><br />
+                          {selectedService.service_name}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  </MapContainer>
                 </div>
                 
                 <div className="mt-6 flex justify-end">
@@ -305,6 +332,7 @@ export default function TechnicianServiceHistory() {
                     variant="ghost"
                     size="md"
                     onClick={closeMapModal}
+                    icon={<XMarkIcon className="w-4 h-4" />}
                   >
                     Close
                   </AnimatedButton>
