@@ -15,6 +15,7 @@ import {
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine';
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
 import { AnimatedButton } from '../../components/ui/AnimatedButton';
 import { FloatingOrbs } from '../../components/ui/FloatingElements';
@@ -27,12 +28,38 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
 });
 
+// Custom routing control
+function RouteControl({ from, to }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!from || !to) return;
+
+    const control = L.Routing.control({
+      waypoints: [L.latLng(from[0], from[1]), L.latLng(to[0], to[1])],
+      routeWhileDragging: false,
+      draggableWaypoints: false,
+      addWaypoints: false,
+      show: false,
+      createMarker: () => null,
+      lineOptions: {
+        styles: [{ color: "#f97316", weight: 5, opacity: 0.7 }],
+      },
+    }).addTo(map);
+
+    return () => map.removeControl(control);
+  }, [from, to, map]);
+
+  return null;
+}
+
 export default function TechnicianServiceHistory() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [techLocation, setTechLocation] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,6 +71,17 @@ export default function TechnicianServiceHistory() {
           navigate('/login');
           return;
         }
+
+        // Get technician's current location
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setTechLocation([pos.coords.latitude, pos.coords.longitude]);
+          },
+          () => {
+            console.warn("Geolocation unavailable");
+            setTechLocation(null);
+          }
+        );
 
         const response = await axios.get('http://127.0.0.1:5000/technician/service-history', {
           headers: { Authorization: `Bearer ${token}` }
@@ -309,7 +347,7 @@ export default function TechnicianServiceHistory() {
                 <div className="h-64 bg-gray-800 rounded-xl flex items-center justify-center">
                   <MapContainer
                     center={[selectedService.location_lat, selectedService.location_lng]}
-                    zoom={13}
+                    zoom={12}
                     style={{ height: '100%', width: '100%', borderRadius: '0.75rem' }}
                   >
                     <TileLayer
@@ -324,19 +362,48 @@ export default function TechnicianServiceHistory() {
                         </div>
                       </Popup>
                     </Marker>
+                    
+                    {techLocation && (
+                      <>
+                        <Marker position={techLocation}>
+                          <Popup>
+                            <div className="text-center">
+                              <strong>Your Location</strong><br />
+                              Current position
+                            </div>
+                          </Popup>
+                        </Marker>
+                        
+                        <RouteControl 
+                          from={techLocation} 
+                          to={[selectedService.location_lat, selectedService.location_lng]} 
+                        />
+                      </>
+                    )}
                   </MapContainer>
                 </div>
                 
                 <div className="mt-6 flex justify-end">
                   <AnimatedButton
                     variant="ghost"
-                    size="md"
+                    size="lg"
                     onClick={closeMapModal}
                     icon={<XMarkIcon className="w-4 h-4" />}
                   >
                     Close
                   </AnimatedButton>
                 </div>
+                
+                {techLocation && (
+                  <div className="mt-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                    <div className="flex items-center gap-2 text-gray-300">
+                      <MapPinIcon className="w-5 h-5 text-orange-400" />
+                      <span>
+                        Route to service location is displayed on the map
+                      </span>
+                    </div>
+                  </div>
+                )}
               </GlassCard>
             </motion.div>
           </motion.div>
