@@ -12,7 +12,14 @@ import {
   DevicePhoneMobileIcon,
   GlobeAltIcon,
   ArrowLeftIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  UserIcon,
+  MapPinIcon,
+  DocumentTextIcon,
+  QrCodeIcon,
+  CreditCardIcon as CreditCardIconSolid
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -26,6 +33,7 @@ export default function UserPayment() {
   const [loading, setLoading] = useState(true);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
   const navigate = useNavigate();
   const rpzkey = import.meta.env.VITE_RAZORPAY_KEY;
 
@@ -107,18 +115,14 @@ export default function UserPayment() {
       const token = sessionStorage.getItem('token');
       const { amount, user_email, user_phone } = bookingDetails;
 
-      // Create order on server (optional step - depends on your backend)
-      // const orderResponse = await axios.post(
-      //   `http://127.0.0.1:5000/payment/create-order/${bookingId}`,
-      //   { amount },
-      //   { headers: { Authorization: `Bearer ${token}` } }
-      // );
-      
-      // const orderId = orderResponse.data.order_id;
+      // Calculate the total amount with tax and discount
+      const taxAmount = amount * 0.18;
+      const discountAmount = amount * 0.05;
+      const totalAmount = amount + taxAmount - discountAmount;
 
       const options = {
         key: rpzkey,
-        amount: Math.round(amount * 100), // Amount in paise
+        amount: Math.round(totalAmount * 100), // Amount in paise
         currency: "INR",
         name: "Pestilee Services",
         description: `Payment for Service Booking #${bookingId}`,
@@ -132,7 +136,7 @@ export default function UserPayment() {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_signature: response.razorpay_signature,
-                amount: bookingDetails.amount
+                amount: totalAmount
               },
               { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -196,6 +200,13 @@ export default function UserPayment() {
     },
   };
 
+  const paymentMethods = [
+    { id: 'card', name: 'Credit/Debit Card', icon: CreditCardIcon },
+    { id: 'upi', name: 'UPI', icon: QrCodeIcon },
+    { id: 'netbanking', name: 'Net Banking', icon: GlobeAltIcon },
+    { id: 'wallet', name: 'Wallet', icon: BanknotesIcon },
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center relative overflow-hidden">
@@ -236,13 +247,19 @@ export default function UserPayment() {
     );
   }
 
+  // Calculate amounts
+  const baseAmount = bookingDetails.amount || 0;
+  const taxAmount = baseAmount * 0.18;
+  const discountAmount = baseAmount * 0.05;
+  const totalAmount = baseAmount + taxAmount - discountAmount;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 relative overflow-hidden">
       <FloatingOrbs />
       <ParticleField />
       
       <motion.div
-        className="relative z-10 p-6 max-w-4xl mx-auto space-y-8"
+        className="relative z-10 p-6 max-w-6xl mx-auto space-y-8"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -265,7 +282,7 @@ export default function UserPayment() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              Complete Your Payment
+              Secure Checkout
             </motion.h1>
             <motion.p 
               className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto"
@@ -273,14 +290,43 @@ export default function UserPayment() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
-              Secure payment for your pest control service
+              Complete your payment for premium pest control service
             </motion.p>
+            
+            {/* Payment Progress */}
+            <motion.div 
+              className="flex justify-center items-center gap-4 max-w-md mx-auto"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.9 }}
+            >
+              <div className="flex-1 flex flex-col items-center">
+                <div className="w-10 h-10 rounded-full bg-emerald-700 text-white flex items-center justify-center mb-2">
+                  <CheckCircleIcon className="w-6 h-6" />
+                </div>
+                <span className="text-sm text-emerald-400">Service Booked</span>
+              </div>
+              <div className="w-16 h-0.5 bg-emerald-700"></div>
+              <div className="flex-1 flex flex-col items-center">
+                <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mb-2">
+                  <CreditCardIcon className="w-6 h-6" />
+                </div>
+                <span className="text-sm text-emerald-400">Payment</span>
+              </div>
+              <div className="w-16 h-0.5 bg-white/20"></div>
+              <div className="flex-1 flex flex-col items-center">
+                <div className="w-10 h-10 rounded-full bg-white/10 text-gray-400 flex items-center justify-center mb-2">
+                  <CheckCircleIcon className="w-6 h-6" />
+                </div>
+                <span className="text-sm text-gray-400">Confirmation</span>
+              </div>
+            </motion.div>
           </GlassCard>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Payment Details */}
-          <motion.div variants={itemVariants}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Service Details - 3 columns */}
+          <motion.div variants={itemVariants} className="lg:col-span-3">
             <NeonCard className="p-6" color="emerald">
               <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <ShieldCheckIcon className="w-6 h-6 text-emerald-400" />
@@ -288,58 +334,106 @@ export default function UserPayment() {
               </h2>
               
               <div className="space-y-6">
-                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white">
-                      <ShieldCheckIcon className="w-6 h-6" />
+                {/* Service Info */}
+                <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white">
+                      <ShieldCheckIcon className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="text-white font-medium text-lg">{bookingDetails.service_name}</h3>
-                      <p className="text-gray-400 text-sm">Booking #{bookingId}</p>
+                      <h3 className="text-white font-medium text-xl">{bookingDetails.service_name}</h3>
+                      <div className="flex items-center gap-2 text-gray-400 text-sm">
+                        <DocumentTextIcon className="w-4 h-4" />
+                        <span>Booking #{bookingId}</span>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div className="flex flex-col">
-                      <span className="text-gray-400 text-sm">Date & Time</span>
-                      <span className="text-white">
-                        {new Date(bookingDetails.booking_date).toLocaleString()}
-                      </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex items-start gap-3">
+                      <CalendarDaysIcon className="w-5 h-5 text-emerald-400 mt-0.5" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Date & Time</p>
+                        <p className="text-white">
+                          {new Date(bookingDetails.booking_date).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-gray-400 text-sm">Status</span>
-                      <span className="text-yellow-400 capitalize">
-                        {bookingDetails.status}
-                      </span>
+                    
+                    <div className="flex items-start gap-3">
+                      <UserIcon className="w-5 h-5 text-emerald-400 mt-0.5" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Customer</p>
+                        <p className="text-white">
+                          {sessionStorage.getItem('username') || 'Customer'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-gray-400 text-sm">Technicians</span>
-                      <span className="text-white">
-                        {bookingDetails.technicians_needed || 1}
-                      </span>
+                    
+                    <div className="flex items-start gap-3">
+                      <ClockIcon className="w-5 h-5 text-emerald-400 mt-0.5" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Duration</p>
+                        <p className="text-white">
+                          {bookingDetails.duration_minutes || 60} minutes
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-gray-400 text-sm">Duration</span>
-                      <span className="text-white">
-                        {bookingDetails.duration_minutes || 60} minutes
-                      </span>
+                    
+                    <div className="flex items-start gap-3">
+                      <MapPinIcon className="w-5 h-5 text-emerald-400 mt-0.5" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Location</p>
+                        <p className="text-white">
+                          {bookingDetails.location_lat && bookingDetails.location_lng 
+                            ? 'Selected on map' 
+                            : 'Not specified'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
+                {/* Service Description */}
+                {bookingDetails.description && (
+                  <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                    <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+                      <DocumentTextIcon className="w-5 h-5 text-emerald-400" />
+                      Service Description
+                    </h3>
+                    <p className="text-gray-300 text-sm">{bookingDetails.description}</p>
+                  </div>
+                )}
+                
+                {/* Special Requirements */}
                 {bookingDetails.requirements && (
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                    <h3 className="text-white font-medium mb-2">Special Requirements</h3>
+                  <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                    <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+                      <DocumentTextIcon className="w-5 h-5 text-emerald-400" />
+                      Special Requirements
+                    </h3>
                     <p className="text-gray-300 text-sm">{bookingDetails.requirements}</p>
                   </div>
                 )}
+                
+                {/* Cancellation Policy */}
+                <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                  <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+                    <ShieldCheckIcon className="w-5 h-5 text-emerald-400" />
+                    Cancellation Policy
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    Free cancellation up to 24 hours before the scheduled service. 
+                    Cancellations within 24 hours may incur a 50% charge.
+                  </p>
+                </div>
               </div>
             </NeonCard>
           </motion.div>
 
-          {/* Payment Summary */}
-          <motion.div variants={itemVariants}>
-            <NeonCard className="p-6" color="blue">
+          {/* Payment Summary - 2 columns */}
+          <motion.div variants={itemVariants} className="lg:col-span-2">
+            <NeonCard className="p-6 sticky top-6" color="blue">
               <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <CurrencyDollarIcon className="w-6 h-6 text-blue-400" />
                 Payment Summary
@@ -347,52 +441,62 @@ export default function UserPayment() {
               
               <div className="space-y-6">
                 {/* Price Breakdown */}
-                <div className="space-y-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="space-y-3 p-6 bg-white/5 rounded-xl border border-white/10">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Service Fee</span>
-                    <span className="text-white">₹{bookingDetails.amount}</span>
+                    <span className="text-white">₹{baseAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Tax (18% GST)</span>
-                    <span className="text-white">₹{(bookingDetails.amount * 0.18).toFixed(2)}</span>
+                    <span className="text-white">₹{taxAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Discount</span>
-                    <span className="text-emerald-400">-₹{(bookingDetails.amount * 0.05).toFixed(2)}</span>
+                    <span className="text-gray-300">Discount (5%)</span>
+                    <span className="text-emerald-400">-₹{discountAmount.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 mt-3">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold text-white">Total Amount</span>
                       <span className="text-2xl font-bold text-blue-400">
-                        ₹{(bookingDetails.amount * 1.13).toFixed(2)}
+                        ₹{totalAmount.toFixed(2)}
                       </span>
                     </div>
+                    <p className="text-xs text-gray-400 text-right mt-1">
+                      Inclusive of all taxes
+                    </p>
                   </div>
                 </div>
                 
                 {/* Payment Methods */}
-                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                  <h3 className="text-white font-medium mb-4">Payment Methods</h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { name: 'Credit Card', icon: CreditCardIcon },
-                      { name: 'UPI', icon: DevicePhoneMobileIcon },
-                      { name: 'Net Banking', icon: GlobeAltIcon },
-                      { name: 'Wallet', icon: BanknotesIcon },
-                    ].map((method, index) => (
+                <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                  <h3 className="text-white font-medium mb-4">Select Payment Method</h3>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    {paymentMethods.map((method) => (
                       <motion.div
-                        key={method.name}
-                        className="flex flex-col items-center p-3 bg-white/10 rounded-lg border border-white/20 hover:bg-white/20 transition-colors cursor-pointer"
-                        whileHover={{ y: -5 }}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 + index * 0.1 }}
+                        key={method.id}
+                        className={`flex flex-col items-center p-4 rounded-xl border cursor-pointer transition-all ${
+                          selectedPaymentMethod === method.id
+                            ? 'bg-blue-500/20 border-blue-500/40'
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                        }`}
+                        onClick={() => setSelectedPaymentMethod(method.id)}
+                        whileHover={{ y: -3 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <method.icon className="w-6 h-6 text-blue-400 mb-2" />
-                        <span className="text-xs text-gray-300 text-center">{method.name}</span>
+                        <method.icon className={`w-8 h-8 mb-2 ${
+                          selectedPaymentMethod === method.id ? 'text-blue-400' : 'text-gray-400'
+                        }`} />
+                        <span className={`text-sm ${
+                          selectedPaymentMethod === method.id ? 'text-blue-400' : 'text-gray-300'
+                        }`}>
+                          {method.name}
+                        </span>
                       </motion.div>
                     ))}
                   </div>
+                  <p className="text-xs text-gray-400 text-center">
+                    All payment methods are processed securely through Razorpay
+                  </p>
                 </div>
                 
                 {/* Payment Button */}
@@ -421,7 +525,7 @@ export default function UserPayment() {
                   </div>
                   <div className="flex flex-col items-center text-center">
                     <CheckCircleIcon className="w-6 h-6 text-emerald-400 mb-1" />
-                    <span className="text-xs text-gray-400">Satisfaction Guarantee</span>
+                    <span className="text-xs text-gray-400">Money-Back Guarantee</span>
                   </div>
                 </div>
                 
