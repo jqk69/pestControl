@@ -358,15 +358,17 @@ export default function TechnicianServiceHistory() {
                             <div>
                               {service.location_lat && service.location_lng && (
                                 <AnimatedButton
-                          <AnimatedButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewLocation(service)}
-                            icon={<MapPinIcon className="w-4 h-4" />}
-                            disabled={!service.location_lat || !service.location_lng}
-                          >
-                            View Location
-                          </AnimatedButton>
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewLocation(service)}
+                                  icon={<MapPinIcon className="w-4 h-4" />}
+                                  disabled={!service.location_lat || !service.location_lng}
+                                >
+                                  View Location
+                                </AnimatedButton>
+                              )}
+                            </div>
+                          </div>
                         </NeonCard>
                       </motion.div>
                     ))}

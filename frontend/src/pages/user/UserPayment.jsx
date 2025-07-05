@@ -18,8 +18,7 @@ import {
   UserIcon,
   MapPinIcon,
   DocumentTextIcon,
-  QrCodeIcon,
-  CreditCardIcon as CreditCardIconSolid
+  QrCodeIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -38,6 +37,41 @@ export default function UserPayment() {
   const rpzkey = import.meta.env.VITE_RAZORPAY_KEY;
 
   useEffect(() => {
+    const loadScript = async () => {
+      try {
+        if (window.Razorpay) {
+          setScriptLoaded(true);
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        script.onload = () => {
+          setScriptLoaded(true);
+        };
+        script.onerror = () => {
+          console.error("Razorpay script failed to load");
+          setScriptLoaded(false);
+        };
+        document.body.appendChild(script);
+      } catch (err) {
+        console.error("Error loading Razorpay script:", err);
+        setScriptLoaded(false);
+      }
+    };
+
+    loadScript();
+
+    return () => {
+      const razorpayScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (razorpayScript) {
+        document.body.removeChild(razorpayScript);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchBooking = async () => {
       try {
         setLoading(true);
@@ -52,15 +86,10 @@ export default function UserPayment() {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        if (res.data && res.data.bookingDetails) {
-          setBookingDetails(res.data.bookingDetails);
-          
-          if (res.data.bookingDetails.status !== 'pending') {
-            toast.info('This booking has already been processed');
-            setTimeout(() => navigate('/user/service-history'), 2000);
-          }
-        } else {
-          toast.error('Booking not found');
+        setBookingDetails(res.data);
+        
+        if (res.data.status !== 'pending') {
+          toast.info('This booking has already been processed');
           setTimeout(() => navigate('/user/service-history'), 2000);
         }
       } catch (err) {
@@ -73,26 +102,7 @@ export default function UserPayment() {
     };
 
     fetchBooking();
-    loadRazorpayScript();
   }, [bookingId, navigate]);
-
-  const loadRazorpayScript = () => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => {
-      console.error('Razorpay SDK failed to load');
-      toast.error('Payment gateway failed to load. Please try again later.');
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  };
 
   const handlePayment = async () => {
     if (!scriptLoaded) {
@@ -113,12 +123,11 @@ export default function UserPayment() {
     try {
       setProcessingPayment(true);
       const token = sessionStorage.getItem('token');
-      const { amount, user_email, user_phone } = bookingDetails;
+      const { amount } = bookingDetails;
 
-      // Calculate the total amount with tax and discount
+      // Calculate the total amount with tax
       const taxAmount = amount * 0.18;
-      const discountAmount = amount * 0.05;
-      const totalAmount = amount + taxAmount - discountAmount;
+      const totalAmount = amount + taxAmount;
 
       const options = {
         key: rpzkey,
@@ -150,8 +159,8 @@ export default function UserPayment() {
         },
         prefill: {
           name: sessionStorage.getItem('username') || '',
-          email: user_email || '',
-          contact: user_phone || ''
+          email: bookingDetails.user_email || '',
+          contact: bookingDetails.user_phone || ''
         },
         notes: {
           booking_id: bookingId,
@@ -250,8 +259,7 @@ export default function UserPayment() {
   // Calculate amounts
   const baseAmount = bookingDetails.amount || 0;
   const taxAmount = baseAmount * 0.18;
-  const discountAmount = baseAmount * 0.05;
-  const totalAmount = baseAmount + taxAmount - discountAmount;
+  const totalAmount = baseAmount + taxAmount;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 relative overflow-hidden">
@@ -341,7 +349,7 @@ export default function UserPayment() {
                       <ShieldCheckIcon className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="text-white font-medium text-xl">{bookingDetails.service_name}</h3>
+                      <h3 className="text-white font-medium text-xl">{bookingDetails.service_name || 'Pest Control Service'}</h3>
                       <div className="flex items-center gap-2 text-gray-400 text-sm">
                         <DocumentTextIcon className="w-4 h-4" />
                         <span>Booking #{bookingId}</span>
@@ -355,7 +363,7 @@ export default function UserPayment() {
                       <div>
                         <p className="text-gray-400 text-sm">Date & Time</p>
                         <p className="text-white">
-                          {new Date(bookingDetails.booking_date).toLocaleString()}
+                          {bookingDetails.booking_date ? new Date(bookingDetails.booking_date).toLocaleString() : 'Not specified'}
                         </p>
                       </div>
                     </div>
@@ -449,10 +457,6 @@ export default function UserPayment() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Tax (18% GST)</span>
                     <span className="text-white">₹{taxAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Discount (5%)</span>
-                    <span className="text-emerald-400">-₹{discountAmount.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 mt-3">
                     <div className="flex justify-between items-center">
