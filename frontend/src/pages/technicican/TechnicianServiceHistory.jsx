@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClockIcon,
   XMarkIcon,
+  XMarkIcon,
   CheckCircleIcon,
   MapPinIcon,
   CalendarDaysIcon,
@@ -19,6 +20,43 @@ import 'leaflet-routing-machine';
 import { GlassCard, NeonCard } from '../../components/ui/GlassCard';
 import { AnimatedButton } from '../../components/ui/AnimatedButton';
 import { FloatingOrbs } from '../../components/ui/FloatingElements';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-routing-machine";
+
+// Icons fix for markers
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+});
+
+// Custom routing control
+function RouteControl({ from, to }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!from || !to) return;
+
+    const control = L.Routing.control({
+      waypoints: [L.latLng(from[0], from[1]), L.latLng(to[0], to[1])],
+      routeWhileDragging: false,
+      draggableWaypoints: false,
+      addWaypoints: false,
+      show: false,
+      createMarker: () => null,
+      lineOptions: {
+        styles: [{ color: "#f97316", weight: 5, opacity: 0.7 }],
+      },
+    }).addTo(map);
+
+    return () => map.removeControl(control);
+  }, [from, to, map]);
+
+  return null;
+}
 
 // Icons fix for markers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -60,6 +98,9 @@ export default function TechnicianServiceHistory() {
   const [selectedService, setSelectedService] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
   const [techLocation, setTechLocation] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [techLocation, setTechLocation] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -71,6 +112,17 @@ export default function TechnicianServiceHistory() {
           navigate('/login');
           return;
         }
+
+        // Get technician's current location
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setTechLocation([pos.coords.latitude, pos.coords.longitude]);
+          },
+          () => {
+            console.warn("Geolocation unavailable");
+            setTechLocation(null);
+          }
+        );
 
         // Get technician's current location
         navigator.geolocation.getCurrentPosition(
@@ -102,6 +154,20 @@ export default function TechnicianServiceHistory() {
 
     fetchServiceHistory();
   }, [navigate]);
+
+  const handleViewLocation = (service) => {
+    if (service.location_lat && service.location_lng) {
+      setSelectedService(service);
+      setShowMapModal(true);
+    } else {
+      toast.error('Location information not available for this service');
+    }
+  };
+
+  const closeMapModal = () => {
+    setShowMapModal(false);
+    setSelectedService(null);
+  };
 
   const handleViewLocation = (service) => {
     setSelectedService(service);
@@ -279,6 +345,12 @@ export default function TechnicianServiceHistory() {
                                     </div>
                                   </div>
                                 </div>
+                                {service.location_lat && service.location_lng && (
+                                  <div className="flex items-center gap-2 text-gray-300">
+                                    <MapPinIcon className="w-4 h-4 text-emerald-400" />
+                                    <span><strong>Location:</strong> Available</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -286,16 +358,15 @@ export default function TechnicianServiceHistory() {
                             <div>
                               {service.location_lat && service.location_lng && (
                                 <AnimatedButton
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewLocation(service)}
-                                  icon={<MapPinIcon className="w-4 h-4" />}
-                                >
-                                  View Location
-                                </AnimatedButton>
-                              )}
-                            </div>
-                          </div>
+                          <AnimatedButton
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewLocation(service)}
+                            icon={<MapPinIcon className="w-4 h-4" />}
+                            disabled={!service.location_lat || !service.location_lng}
+                          >
+                            View Location
+                          </AnimatedButton>
                         </NeonCard>
                       </motion.div>
                     ))}
@@ -306,6 +377,106 @@ export default function TechnicianServiceHistory() {
           </motion.div>
         )}
       </motion.div>
+      
+      {/* Map Modal */}
+      <AnimatePresence>
+        {showMapModal && selectedService && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="w-full max-w-4xl h-[600px] relative"
+            >
+              <GlassCard className="h-full relative overflow-hidden">
+                <button
+                  className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-white transition-colors"
+                  onClick={closeMapModal}
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+                
+                <div className="p-6 h-full flex flex-col">
+                  <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                    <MapPinIcon className="w-6 h-6 text-orange-400" />
+                    Service Location
+                  </h2>
+                  
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-4">
+                    <h3 className="text-lg font-medium text-white mb-2">{selectedService.service_name}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <p className="text-gray-300">
+                        <strong>Date:</strong> {formatDate(selectedService.booking_date)}
+                      </p>
+                      <p className="text-gray-300">
+                        <strong>Status:</strong> <span className="capitalize">{selectedService.status}</span>
+                      </p>
+                      <p className="text-gray-300 md:col-span-2">
+                        <strong>Location:</strong> {selectedService.location_lat}, {selectedService.location_lng}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 rounded-xl overflow-hidden">
+                    <MapContainer
+                      center={[selectedService.location_lat, selectedService.location_lng]}
+                      zoom={13}
+                      style={{ height: '100%', width: '100%' }}
+                    >
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      />
+                      <Marker position={[selectedService.location_lat, selectedService.location_lng]}>
+                        <Popup>
+                          <div className="text-center">
+                            <strong>Service Location</strong><br />
+                            {selectedService.service_name}
+                          </div>
+                        </Popup>
+                      </Marker>
+                      
+                      {techLocation && (
+                        <>
+                          <Marker position={techLocation}>
+                            <Popup>
+                              <div className="text-center">
+                                <strong>Your Location</strong><br />
+                                Current position
+                              </div>
+                            </Popup>
+                          </Marker>
+                          
+                          <RouteControl 
+                            from={techLocation} 
+                            to={[selectedService.location_lat, selectedService.location_lng]} 
+                          />
+                        </>
+                      )}
+                    </MapContainer>
+                  </div>
+                  
+                  {techLocation && (
+                    <div className="mt-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                      <div className="flex items-center gap-2 text-gray-300">
+                        <MapPinIcon className="w-5 h-5 text-orange-400" />
+                        <span>
+                          Route to service location is displayed on the map
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </GlassCard>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Map Modal */}
       <AnimatePresence>
