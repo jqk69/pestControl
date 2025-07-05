@@ -257,7 +257,7 @@ export default function UserPayment() {
   }
 
   // Calculate amounts
-  const baseAmount = bookingDetails.amount || 0;
+  const baseAmount = parseFloat(bookingDetails.amount || 0);
   const taxAmount = baseAmount * 0.18;
   const totalAmount = baseAmount + taxAmount;
 
