@@ -15,6 +15,8 @@ import AdminOrders from './AdminOrders'
 import AdminCustomReq from './AdminCustomReq'
 import AdminReports from './AdminReports'
 import AdminLeaveManagement from './AdminLeaveManagement'
+import AdminBlog from './AdminBlog'
+import AdminViewBlog from './AdminBlogView'
 
 
 export default function AdminRouter() {
@@ -58,6 +60,8 @@ export default function AdminRouter() {
           <Route path="services/requests-history" element={<AdminCustomReq/>}/>
           <Route path='reports' element={<AdminReports/>}/>
           <Route path='leave-management' element={<AdminLeaveManagement/>}/>
+          <Route path='blogs' element={<AdminBlog></AdminBlog>}/>
+          <Route path='blogs/:id' element={<AdminViewBlog/>}/>
         </Route>
     </Routes>
     </>

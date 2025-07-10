@@ -472,9 +472,10 @@ def predict_species():
 
 
 llm = HuggingFaceEndpoint(
-    repo_id="HuggingFaceH4/zephyr-7b-beta", 
+    repo_id="tencent/Hunyuan-A13B-Instruct",
+    provider="hf-inference",  # Explicitly set a supported provider
     temperature=0.5,
-    max_new_tokens=100,
+    max_new_tokens=150,
     huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
 )
 
@@ -622,9 +623,11 @@ def get_user_store():
         recommended_items = get_hybrid_recommendations(current_user['sub'], engine)
 
         return jsonify({
-            "items": items,
-            "recommended": recommended_items  # Same return structure
-        })
+    "success": True,
+    "items": items,
+    "recommended": recommended_items
+})
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -793,3 +796,40 @@ def buy_single(product_id):
     conn.close()
 
     return jsonify({'message': 'Buy now item inserted into cart', 'cart_id': cart_id})
+@user_bp.route('/blogs', methods=['GET'])
+@token_required(role='user')
+def list_all_blogs():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, title,date
+        FROM blog_posts
+        ORDER BY date DESC
+    """)
+    blogs = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({'blogs': blogs})
+@user_bp.route('/blogs/<int:blog_id>', methods=['GET'])
+@token_required(role='user')
+def view_blog(blog_id):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, title, content, date
+        FROM blog_posts
+        WHERE id = %s
+    """, (blog_id,))
+    blog = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not blog:
+        return jsonify({'error': 'Blog not found'}), 404
+
+    return jsonify({'blog': blog})

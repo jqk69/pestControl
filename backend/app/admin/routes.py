@@ -3,6 +3,7 @@ from app.db import create_connection
 from ..utils.verify_token import token_required
 import os
 from werkzeug.utils import secure_filename
+from datetime import datetime
 
 admin_bp=Blueprint("admin",__name__,url_prefix="/admin")
 
@@ -818,3 +819,210 @@ def update_leave_status(leave_id):
     conn.close()
 
     return jsonify({"message": f"Leave {new_status}"}), 200
+@admin_bp.route('/blogs', methods=['GET'])
+@token_required(role='admin')
+def get_all_blogs():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM blog_posts ORDER BY date DESC")
+    blogs = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify({'blogs': blogs})
+@admin_bp.route('/blogs/<int:blog_id>', methods=['GET'])
+@token_required(role='admin')
+def get_blog(blog_id):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM blog_posts WHERE id = %s", (blog_id,))
+    blog = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if blog:
+        return jsonify({'blog': blog})
+    return jsonify({'error': 'Blog not found'}), 404
+@admin_bp.route('/blogs/<int:blog_id>', methods=['DELETE'])
+@token_required(role='admin')
+def delete_blog(blog_id):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM blog_posts WHERE id = %s", (blog_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'message': 'Blog deleted successfully'})
+def time_ago(dt):
+    now = datetime.utcnow()
+    delta = now - dt
+    seconds = delta.total_seconds()
+    if seconds < 60:
+        return f"{int(seconds)} seconds ago"
+    minutes = seconds / 60
+    if minutes < 60:
+        return f"{int(minutes)} minute{'s' if minutes != 1 else ''} ago"
+    hours = minutes / 60
+    if hours < 24:
+        return f"{int(hours)} hour{'s' if hours != 1 else ''} ago"
+    days = hours / 24
+    return f"{int(days)} day{'s' if days != 1 else ''} ago"
+@admin_bp.route('/reports', methods=['GET'])
+@token_required(role="admin")
+def get_reports():
+    connection = create_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Total Revenue from Payments
+        cursor.execute("""SELECT 
+    (
+        SELECT COALESCE(SUM(amount), 0)
+        FROM payments
+        WHERE status = 'success'
+        AND YEAR(created_at) = YEAR(CURRENT_DATE)
+        AND MONTH(created_at) = MONTH(CURRENT_DATE)
+    ) +
+    (
+        SELECT COALESCE(SUM(c.quantity * s.price), 0)
+        FROM cart c
+        JOIN store s ON c.product_id = s.id
+        WHERE c.status IN ('ordered', 'shipped', 'delivered')
+        AND YEAR(c.updated_at) = YEAR(CURRENT_DATE)
+        AND MONTH(c.updated_at) = MONTH(CURRENT_DATE)
+    ) AS totalRevenue;
+
+        """)
+        total_revenue = float(cursor.fetchone()['totalRevenue'])
+
+        # Total Users
+        cursor.execute("""
+            SELECT COUNT(*) as totalUsers
+            FROM users
+            WHERE role = 'user' AND status = 'active'
+        """)
+        total_users = int(cursor.fetchone()['totalUsers'])
+
+        # Total Services
+        cursor.execute("""
+            SELECT COUNT(*) as totalServices
+            FROM services
+        """)
+        total_services = int(cursor.fetchone()['totalServices'])
+
+        # Completed Bookings
+        cursor.execute("""
+            SELECT COUNT(*) as completedBookings
+            FROM bookings
+            WHERE status = 'completed'
+        """)
+        completed_bookings = int(cursor.fetchone()['completedBookings'])
+
+        # Monthly Revenue Using Service Prices via Bookings
+        cursor.execute("""SELECT 
+(
+    SELECT COALESCE(SUM(amount), 0)
+    FROM payments
+    WHERE status = 'success'
+    AND YEAR(created_at) = YEAR(CURRENT_DATE)
+    AND MONTH(created_at) = MONTH(CURRENT_DATE)
+) +
+(
+    SELECT COALESCE(SUM(c.quantity * s.price), 0)
+    FROM cart c
+    JOIN store s ON c.product_id = s.id
+    WHERE c.status IN ('ordered', 'shipped', 'delivered')
+    AND YEAR(c.updated_at) = YEAR(CURRENT_DATE)
+    AND MONTH(c.updated_at) = MONTH(CURRENT_DATE)
+) AS revenue""")
+        current_revenue = float(cursor.fetchone()['revenue'])
+
+        # Previous Month Revenue (also from services via bookings)
+        cursor.execute("""
+        SELECT 
+        (
+            SELECT COALESCE(SUM(amount), 0)
+            FROM payments
+            WHERE status = 'success'
+            AND YEAR(created_at) = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+            AND MONTH(created_at) = MONTH(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+        ) +
+        (
+            SELECT COALESCE(SUM(c.quantity * s.price), 0)
+            FROM cart c
+            JOIN store s ON c.product_id = s.id
+            WHERE c.status IN ('ordered', 'shipped', 'delivered')
+            AND YEAR(c.updated_at) = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+            AND MONTH(c.updated_at) = MONTH(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+        ) AS revenue
+        """)
+        last_revenue = float(cursor.fetchone()['revenue'])
+
+
+        monthly_growth = round((current_revenue - last_revenue) / last_revenue * 100, 1) if last_revenue > 0 else (100.0 if current_revenue > 0 else 0.0)
+
+        # Top Services
+        cursor.execute("""
+            SELECT s.name, COUNT(b.booking_id) as bookings
+            FROM services s
+            LEFT JOIN bookings b ON s.service_id = b.service_id
+            GROUP BY s.service_id, s.name
+            ORDER BY bookings DESC
+            LIMIT 3
+        """)
+        top_services = [
+            {'name': row['name'], 'bookings': int(row['bookings'])}
+            for row in cursor.fetchall()
+        ]
+
+        # Recent Activity
+        cursor.execute("""
+            (
+                SELECT 'New user registration' as action, created_at as time
+                FROM users
+                WHERE role = 'user'
+                ORDER BY created_at DESC
+                LIMIT 3
+            ) UNION (
+                SELECT 'Service booking completed' as action, updated_at as time
+                FROM bookings
+                WHERE status = 'completed'
+                ORDER BY updated_at DESC
+                LIMIT 3
+            ) UNION (
+                SELECT 'Payment received' as action, created_at as time
+                FROM payments
+                WHERE status = 'completed'
+                ORDER BY created_at DESC
+                LIMIT 3
+            )
+            ORDER BY time DESC
+            LIMIT 3
+        """)
+        recent_activity = [
+            {'action': row['action'], 'time': time_ago(row['time'])}
+            for row in cursor.fetchall()
+        ]
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'totalRevenue': total_revenue,
+                'totalUsers': total_users,
+                'totalServices': total_services,
+                'completedBookings': completed_bookings,
+                'monthlyGrowth': monthly_growth,
+                'topServices': top_services,
+                'recentActivity': recent_activity,
+                'monthlyServiceBasedIncome': current_revenue  # NEW FIELD
+            }
+        })
+
+    except Exception as e:
+        print(f"Error fetching reports: {str(e)}")
+        return jsonify({'success': False, 'message': f'Failed to fetch reports: {str(e)}'}), 500
+
+    finally:
+        cursor.close()
+        connection.close()

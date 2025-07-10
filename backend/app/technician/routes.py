@@ -64,9 +64,9 @@ def home():
 
         # 4. Availability info
         cursor.execute("""
-            SELECT start_datetime, end_datetime, reason
+            SELECT start_datetime, end_datetime, reason,status
             FROM technician_unavailable
-            WHERE technician_id = %s AND end_datetime >= NOW()
+            WHERE technician_id = %s AND end_datetime >= NOW() and reason !='job' and status = 'approved'
             ORDER BY start_datetime ASC
         """, (technician_id,))
         upcoming_unavailability = cursor.fetchall()
@@ -273,7 +273,7 @@ def get_technician_leave():
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT id, start_datetime, end_datetime, reason, created_at
+        SELECT id, start_datetime, end_datetime, reason, created_at,status
         FROM technician_unavailable
         WHERE technician_id = %s and reason !='job'
         ORDER BY start_datetime DESC
@@ -357,3 +357,24 @@ def delete_technician_leave(leave_id):
     conn.close()
 
     return jsonify({"message": "Leave cancelled successfully"}), 200
+@tech_bp.route("/service-history",methods=["GET"])
+@token_required(role="technician")
+def get_service_history():
+    try:
+        technician_id = g.current_user["sub"]
+        conn = create_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT b.booking_id, s.name AS service_name, b.booking_date, b.status, b.location_lat, b.location_lng
+            FROM bookings b
+            JOIN booking_technicians bt ON b.booking_id = bt.booking_id
+            JOIN services s ON b.service_id = s.service_id
+            WHERE bt.technician_id = %s and status ="completed"
+            ORDER BY b.booking_date ASC
+        """, (technician_id,))
+        assigned_services = cursor.fetchall()
+
+        return jsonify({"assigned_services": assigned_services})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500

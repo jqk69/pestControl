@@ -12,6 +12,8 @@ import UserCartPage from './UserCartPage';
 import UserCheckoutPage from './UserCheckoutPage';
 import UserOrders from './UserOrders';
 import UserOtherOptions from './UserOtherOptions';
+import UserBlog from './UserBlog';
+import UserViewBlog from './UserViewBlog';
 
 export default function UserRouter() {
   const navigate = useNavigate();
@@ -46,12 +48,14 @@ export default function UserRouter() {
         <Route path="store" element={<UserStore />} />
         <Route path="services" element={<UserService/>}/>
         <Route path="services/:id" element={<UserServiceDetail/>}/>
-        <Route path="service/payment/:id" element={<UserPayment/>}/>
+        <Route path="service/payment/:id" element={<UserPayment/>}/>###
         <Route path="service-history" element={<UserSeviceCart/>}/>
         <Route path="cart" element={<UserCartPage/>}/>
         <Route path="cart/checkout" element={<UserCheckoutPage/>}/>
         <Route path="orders" element={<UserOrders/>}/>
         <Route path="other" element={<UserOtherOptions/>}/>
+        <Route path="blogs" element={<UserBlog/>}/>
+        <Route path="blogs/:id" element={<UserViewBlog/>}/>
       </Route>
     </Routes>
   );
