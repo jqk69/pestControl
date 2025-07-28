@@ -1,6 +1,6 @@
 from flask import request, jsonify, Blueprint, current_app,g
 from app.db import create_connection
-from app.models import generate_sql,sentiment_pipeline
+from app.models import sentiment_pipeline
 from ..utils.verify_token import token_required
 import os
 from werkzeug.utils import secure_filename
@@ -17,8 +17,10 @@ import pandas as pd
 import numpy as np
 from surprise import Dataset, Reader, KNNBasic
 import re
-
-
+from ..utils.grok_model import CreateMessage
+import textwrap
+from  ..utils.clip_model import predict_pest_from_image
+from ..utils.similiarity_checker import get_recommendations_for_pest
  
 load_dotenv()
 user_bp=Blueprint('user',__name__,url_prefix="/user")
@@ -33,7 +35,7 @@ def get_services():
         conn = create_connection()
         cursor = conn.cursor(dictionary=True)
 
-        query = "SELECT service_id, service_type, category, name, technicians_needed, price,pest_type, description FROM services WHERE 1"
+        query = "SELECT service_id, service_type, category, name, technicians_needed, price,pest_type, description,duration_minutes FROM services WHERE 1"
         
         cursor.execute(query)
         services = cursor.fetchall()
@@ -94,7 +96,7 @@ def book_service(service_id):
         data = request.get_json()
         user_id = int(g.current_user['sub'])
 
-        booking_date = data['booking_date']  # Format: 'YYYY-MM-DD'
+        booking_date = data['booking_date'] 
         location_lat = data['lat']
         location_lng = data['lng']
         requirements = data.get('requirements', '')
@@ -440,44 +442,6 @@ def get_all_booking_locations():
     finally:
         if cursor: cursor.close()
         if conn: conn.close()
-@user_bp.route("/predict-pest",methods=['POST'])
-@token_required(role='user')
-def predict_species():
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'message': 'No file uploaded'}), 400
-
-    file = request.files['file']
-    files = {'image': (file.filename, file.stream, file.content_type)}
-
-    try:
-        response = requests.post(
-            'https://api.inaturalist.org/v1/computervision/score_image',
-            files=files
-        )
-        data = response.json()
-
-        if 'results' in data and data['results']:
-            top_result = data['results'][0]['taxon']
-            return jsonify({
-                'success': True,
-                'predicted_class': top_result.get('preferred_common_name', 'Unknown'),
-                'scientific_name': top_result.get('name', 'Unknown')
-            })
-        else:
-            return jsonify({'success': False, 'message': 'No match found'})
-
-    except Exception as e:
-        print("Error:", e)
-        return jsonify({'success': False, 'message': 'Prediction failed'})
-
-
-llm = HuggingFaceEndpoint(
-    repo_id="tencent/Hunyuan-A13B-Instruct",
-    provider="hf-inference",  # Explicitly set a supported provider
-    temperature=0.5,
-    max_new_tokens=150,
-    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
-)
 
 @user_bp.route("/chat", methods=["POST"])
 def user_chat():
@@ -492,15 +456,31 @@ def user_chat():
         return jsonify({"error": "Message cannot be empty"}), 400
 
     try:
-        # Call LLM with request to keep it short
-        bot_reply = llm.invoke(f"{user_message}, answer as short and clearly formatted list if needed")
+        prompt = textwrap.dedent("""
+            You are a friendly and knowledgeable pest control assistant for a professional pest management service website.
+            Your job is to help users with:
+
+            - Identifying pests (based on user description or uploaded images)
+            - Recommending appropriate pest control services
+            - Explaining the treatment process
+            - Answering questions about safety, pricing, and bookings
+            - Providing tips for pest prevention
+
+            Always ask follow-up questions to understand the user's pest issue better, and suggest specific services or actions.
+            Keep your responses professional, concise, and supportive.
+            If the issue is complex, guide the user to contact human support or schedule an inspection.
+
+            Use a friendly tone but avoid humor unless asked.
+            Always prioritize safety and accuracy in your suggestions.
+        """).strip()
+        bot_reply = CreateMessage(user_message,prompt)
 
         # Validate response
-        if not bot_reply or not isinstance(bot_reply, str):
+        if not bot_reply:
             return jsonify({"error": "Invalid response from AI service"}), 500
 
         # Format response to insert newlines after numbered items
-        formatted_reply = bot_reply
+        formatted_reply = bot_reply.content
         formatted_reply = formatted_reply.replace(". ", ".\n")  # New line after numbered points
         formatted_reply = "\n".join(line.strip() for line in formatted_reply.splitlines() if line.strip())
         return jsonify({"reply": formatted_reply})
@@ -631,73 +611,9 @@ def get_user_store():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500 # Replace with your function that calls HuggingFace
+        return jsonify({"error": str(e)}), 500 
 
-@user_bp.route("/generate-report", methods=["POST"])
-def generate_report():
-    data = request.get_json()
-    question = data.get("question", "").strip()
 
-    if not question:
-        return jsonify({"error": "Please provide a question."}), 400
-
-    # Step 1: Get raw SQL from LLM
-    raw_sql = generate_sql(question)
-    print("Raw SQL from LLM:", raw_sql)  # Debug only
-
-    # Step 2: Extract SELECT query from any text
-    match = re.search(r"(?i)select\s.+", raw_sql.strip(), re.DOTALL)
-    if not match:
-        return jsonify({'error': 'Only SELECT queries are allowed.'}), 500
-
-    sql = match.group(0).strip()
-    sql_lower = sql.lower()
-
-    # Step 3: Block unsafe keywords and patterns
-    unsafe_keywords = ["⚠️", "drop", "delete", "update", "insert", "--", "/*", "alter"]
-    if any(bad in sql_lower for bad in unsafe_keywords):
-        return jsonify({"message":"dangerous queries detected"})
-
-    semicolon_count = sql.count(";")
-    if semicolon_count > 1 or (semicolon_count == 1 and not sql.strip().endswith(";")):
-        pass
-
-    # Strip trailing semicolon safely
-    sql = sql.rstrip(";").strip()
-
-    # Step 4: Verify allowed tables only
-    allowed_tables = {
-        "bookings", "booking_technicians", "cart", "notifications", "payments",
-        "services", "store", "technicians", "technician_unavailable", "users"
-    }
-    used_tables = set(re.findall(r'from\s+(\w+)|join\s+(\w+)', sql_lower))
-    used_tables = {tbl for pair in used_tables for tbl in pair if tbl}
-
-    if not used_tables.intersection(allowed_tables):
-        return jsonify({'error': 'SQL must be a SELECT query targeting allowed tables.'}), 500
-
-    # Step 5: Execute query
-    try:
-        conn = create_connection()
-        cursor = conn.cursor()
-        cursor.execute(sql)
-        rows = cursor.fetchall()
-        columns = [desc[0] for desc in cursor.description]
-        results = [dict(zip(columns, row)) for row in rows]
-
-        return jsonify({
-            'sql': sql,
-            'results': results,
-            'message': 'Query executed successfully.'
-        })
-
-    except Exception as e:
-        print("Database Error:", str(e))
-        return jsonify({'error': f'Database error: {str(e)}'}), 500
-
-    finally:
-        if conn:
-            conn.close()
 @user_bp.route("/feedback", methods=["PATCH"])
 @token_required(role="user")
 def submit_feedback():
@@ -833,3 +749,34 @@ def view_blog(blog_id):
         return jsonify({'error': 'Blog not found'}), 404
 
     return jsonify({'blog': blog})
+@user_bp.route('/predict-pest', methods=['POST'])
+@token_required(role='user')
+def predict_pest_type():
+    try:
+        if 'image' not in request.files:
+            return jsonify({"success": False, "message": "Image file is required"}), 400
+
+        file = request.files['image']
+        image_bytes = file.read()
+
+        predicted_label, confidence = predict_pest_from_image(image_bytes)
+
+        if confidence < 0.40:
+            return jsonify({
+                "success": False,
+                "message": "Confidence too low to make a reliable prediction.",
+                "confidence": confidence
+            }), 200
+
+        recommended_services = get_recommendations_for_pest(predicted_label)
+        print(recommended_services)
+        return jsonify({
+            "success": True,
+            "pest_type": predicted_label,
+            "confidence": confidence,
+            "recommendations": recommended_services
+        }), 200
+
+    except Exception as e:
+        print("Pest prediction error:", str(e))
+        return jsonify({"success": False, "message": "Prediction failed"}), 500

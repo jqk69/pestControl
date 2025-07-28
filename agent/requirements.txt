@@ -1,4 +1,0 @@
-langgraph
-python-dotenv
-requests
-mysql-connector-python

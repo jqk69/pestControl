@@ -25,15 +25,13 @@ def tavily_search(state: BlogState) -> BlogState:
     response = requests.post(
         "https://api.tavily.com/search",
         json={
-            "query": "latest pest control news India 2025",
+            "query": "pest  news India",
             "max_results": 5
         },
         headers={
             "Authorization": f"Bearer {tavily_key}"
         }
     )
-
-    print("✅ Tavily status:", response.status_code)
     data = response.json()
 
     results = data.get("results", [])
@@ -57,28 +55,24 @@ def generate_blog(state: BlogState) -> BlogState:
     if not groq_key:
         raise ValueError("Missing GROQ_API_KEY")
 
-    prompt = f"""
-You are a professional blog writer for a pest control company in India.
+    prompt = f"""You are a professional blog writer for a pest control company in India.
 
-Using the following pest control news updates:
-
+Using the following pest related news updates as inspiration:
 {state['search_data']}
 
-Generate a full SEO-optimized blog in **HTML format** with:
+Generate a full SEO-optimized blog post in **HTML format** with the following requirements:
 
-- A catchy <h1> title
-- An introductory <p> paragraph
-- Three clearly separated <h2> sections with <ul> or <p> content
-- At least 3 customer tips under a <h2>Tips</h2> heading using <ul>
-- A <strong>Conclusion</strong> in its own <p> tag
-
-Do not wrap the entire blog in a <html> or <body> tag.
-Add useful class names like "blog-title", "blog-section", etc., to help with styling.
-Avoid raw copy-paste of news. Summarize and rewrite in your own words.
-
-Keywords to include: season, pests, safety, home, pest control India.
+- A catchy `<h1>` title with class `blog-title text-4xl font-extrabold text-white bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent mb-6`.
+- An introductory `<p>` paragraph with class `blog-intro text-gray-200 text-lg max-w-3xl mb-8`.
+- Three clearly separated `<h2>` sections with class `blog-section-title text-2xl font-bold text-white mb-4 flex items-center gap-2`, each containing `<p>` or `<ul>` content with class `blog-content text-gray-300 text-base mb-6` for paragraphs or `blog-list list-disc pl-6 text-gray-300 text-base mb-6` for lists. Use Tailwind CSS classes to match a modern, sleek design (e.g., `bg-white/5`, `border-white/10`, `rounded-xl`, `p-4` for any container divs).
+- At least 3 customer tips under an `<h2>` heading titled "Tips to Keep Your Home Pest-Free" with class `blog-section-title`, using a `<ul>` with class `blog-list list-disc pl-6 text-gray-300 text-base mb-6`.
+- A `<strong>Conclusion</strong>` in its own `<p>` tag with class `blog-conclusion text-gray-200 text-lg mt-8`.
+- Wrap each `<h2>` section in a `<div>` with class `blog-section bg-white/5 border border-white/10 rounded-xl p-6 mb-8` to match the GlassCard/NeonCard aesthetic.
+- Do not wrap the entire blog in `<html>` or `<body>` tags.
+- Use Tailwind CSS classes consistent with a dark gradient theme (`bg-gradient-to-br from-gray-900 via-teal-900 to-emerald-900`) and ensure compatibility with the frontend’s modern, professional look (e.g., `text-emerald-400` for highlights, `hover:bg-emerald-500` for interactive elements if applicable).
+- Avoid raw copy-pasting of news. Summarize and rewrite in your own words to create engaging, original content.
+- Ensure the content is engaging, informative, and tailored to Indian homeowners and businesses, reflecting the latest pest trends (e.g., eco-friendly methods, Integrated Pest Management).
 """
-
     res = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         headers={
@@ -134,7 +128,6 @@ def save_to_mysql(state: BlogState) -> BlogState:
     cursor.close()
     conn.close()
 
-    print("✅ Blog saved successfully.")
     return state
 
 
@@ -152,8 +145,11 @@ builder.add_edge("save_blog", END)
 graph = builder.compile()
 
 
-### Step 5: Execute
-if __name__ == "__main__":
-    final_state = graph.invoke({})
-    print("\n📝 Final Blog:\n")
-    print(final_state["blog_content"])
+
+def run_weekly_blog_pipeline() -> dict:
+    try:
+        graph.invoke({})
+        return {"status": "success", "message": "Blog generated and saved."}
+    except Exception as e:
+        print("❌ Error in pipeline:", str(e))
+        return {"status": "error", "message": str(e)}

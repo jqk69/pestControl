@@ -244,7 +244,7 @@ export default function TechnicianAssignedServices() {
                                 </div>
                                 <div className="flex items-center gap-2 text-gray-300">
                                   <UserIcon className="w-4 h-4 text-orange-400" />
-                                  <span><strong>Customer:</strong> {item.user_name || 'Not specified'}</span>
+                                  <span><strong>Customer:</strong> {item.username || 'Not specified'}</span>
                                 </div>
                                 {item.user_phone && (
                                   <div className="flex items-center gap-2 text-gray-300">

@@ -250,13 +250,29 @@ export default function AdminCustomReq() {
 
                         {/* Status */}
                         <div className="flex flex-col items-end gap-4">
-                          <div className="flex items-center gap-2">
-                            <ClockIcon className={`w-5 h-5 text-${config.color}-400`} />
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${config.color}-500/20 text-${config.color}-400 border border-${config.color}-500/30 capitalize`}>
-                              {config.label}
-                            </span>
+                            <div className="flex flex-col items-end gap-1">
+                              {booking.sentiment && (
+                                <span
+                                  className={`px-2 py-1 rounded text-xs font-semibold capitalize ${
+                                    booking.sentiment === 'positive'
+                                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                      : booking.sentiment === 'neutral'
+                                      ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                  }`}
+                                >
+                                  {booking.sentiment}
+                                </span>
+                              )}
+
+                              <div className="flex items-center gap-4">
+                                <ClockIcon className={`w-5 h-5 text-${config.color}-400`} />
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${config.color}-500/20 text-${config.color}-400 border border-${config.color}-500/30 capitalize`}>
+                                  {config.label}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
                       </div>
                     </NeonCard>
                   </motion.div>

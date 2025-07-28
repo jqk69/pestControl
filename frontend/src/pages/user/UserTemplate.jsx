@@ -129,7 +129,6 @@ export default function UserTemplate() {
 
   const menuItems = [
     { name: 'Dashboard', path: 'dashboard', icon: HomeIcon, color: 'emerald' },
-    { name: 'Profile', path: 'profile', icon: UserIcon, color: 'blue' },
     { name: 'Blog', path: 'blogs', icon: DocumentTextIcon, color: 'purple' },
   ];
 
@@ -431,7 +430,7 @@ export default function UserTemplate() {
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/5 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <CogIcon className="w-5 h-5 group-hover:text-orange-400 transition-colors relative z-10" />
-                <span className="relative z-10">Other Options</span>
+                <span className="relative z-10">Pest Predicitons</span>
               </motion.a>
 
               <motion.a
@@ -624,27 +623,7 @@ export default function UserTemplate() {
                   </div>
 
                   {/* Profile */}
-                  <div className="relative">
-                    <motion.div 
-                      className="flex items-center space-x-3 cursor-pointer group"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={(e) => handleRedirect(e, 'profile')}
-                    >
-                      <motion.div 
-                        className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg group-hover:shadow-emerald-500/50 transition-all duration-300"
-                        whileHover={{ 
-                          boxShadow: "0 0 20px rgba(16, 185, 129, 0.5)",
-                          scale: 1.1
-                        }}
-                      >
-                        {username ? username.charAt(0).toUpperCase() : 'U'}
-                      </motion.div>
-                      <span className="text-gray-200 font-medium hidden sm:block group-hover:text-emerald-400 transition-colors">
-                        {username}
-                      </span>
-                    </motion.div>
-                  </div>
+                  
                 </div>
               </div>
             </GlassCard>

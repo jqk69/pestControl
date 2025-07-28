@@ -253,7 +253,10 @@ export default function AdminEditProduct() {
                       <input
                         type="number"
                         name="price"
+
                         value={product.price || ''}
+                        min="100"
+                        max="10000"
                         onChange={handleChange}
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter price"
@@ -270,6 +273,8 @@ export default function AdminEditProduct() {
                         type="number"
                         name="inventory_amount"
                         value={product.inventory_amount || ''}
+                        min="10"
+                        max="1000"
                         onChange={handleChange}
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter inventory amount"

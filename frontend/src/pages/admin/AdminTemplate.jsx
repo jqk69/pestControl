@@ -84,7 +84,9 @@ export default function AdminTemplate() {
   const menuItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: HomeIcon },
     { name: 'Reports', path: '/admin/reports', icon: ChartBarIcon },
+    { name: 'Blogs', path: '/admin/blogs', icon: ChartBarIcon },
     { name: 'Leave Management', path: '/admin/leave-management', icon: DocumentTextIcon },
+    { name: 'Heatmap', path: '/admin/heatmap', icon: DocumentTextIcon }
   ];
 
   const serviceItems = [
@@ -354,23 +356,26 @@ export default function AdminTemplate() {
                         initial={{ opacity: 0, scale: 0.8, y: -10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: -10 }}
-                        className="absolute right-0 mt-2 w-80 z-20"
+                        className="absolute right-0 mt-2 w-80 z-50"
                       >
-                        <GlassCard className="max-h-80 overflow-hidden">
-                          <div className="p-4 border-b border-white/20 bg-gradient-to-r from-blue-500/20 to-purple-500/20">
-                            <h3 className="font-semibold text-white">Admin Notifications</h3>
+                        <div className="rounded-xl shadow-2xl bg-gray-900/95 border border-gray-700 text-white">
+                          {/* Header */}
+                          <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-blue-700/50 to-purple-700/50 rounded-t-xl">
+                            <h3 className="font-semibold text-white text-lg">Admin Notifications</h3>
                           </div>
-                          <div className="max-h-60 overflow-y-auto">
+
+                          {/* Notification List */}
+                          <div className="max-h-60 overflow-y-auto custom-scrollbar">
                             {notifications.length > 0 ? (
                               notifications.map((notif, index) => (
                                 <motion.div
                                   key={notif.id}
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: index * 0.1 }}
-                                  className="p-4 hover:bg-white/5 border-b border-white/10 transition-colors"
+                                  transition={{ delay: index * 0.07 }}
+                                  className="p-4 hover:bg-gray-800 transition-all duration-300 border-b border-gray-700"
                                 >
-                                  <span className="text-gray-200 text-sm">{notif.message}</span>
+                                  <span className="text-white text-sm">{notif.message}</span>
                                   <p className="text-xs text-gray-400 mt-1">
                                     {notif.created_at ? new Date(notif.created_at).toLocaleString() : 'Date unavailable'}
                                   </p>
@@ -380,12 +385,11 @@ export default function AdminTemplate() {
                               <div className="p-4 text-center text-gray-400">No new notifications</div>
                             )}
                           </div>
-                        </GlassCard>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-
                 {/* Profile */}
                 <div className="relative">
                   <motion.div 

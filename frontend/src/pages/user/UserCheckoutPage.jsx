@@ -40,9 +40,8 @@ export default function UserCheckoutPage() {
   const rpzkey = import.meta.env.VITE_RAZORPAY_KEY;
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.18;
   const shipping = 0; // Free shipping
-  const total = subtotal + tax + shipping;
+  const total = subtotal 
 
   const handleInputChange = (e) => {
     setFormData({
@@ -140,11 +139,18 @@ export default function UserCheckoutPage() {
       }
     }
     if (currentStep === 2) {
-      if (!formData.phone) {
-        toast.error('Please enter your phone number');
-        return;
+        const phone = formData.phone;
+
+        if (!phone) {
+          toast.error('Please enter your phone number');
+          return;
+        }
+
+        if (!/^\d{10}$/.test(phone)) {
+          toast.error('Phone number must be exactly 10 digits');
+          return;
+        }
       }
-    }
     setCurrentStep(currentStep + 1);
   };
 
@@ -379,6 +385,9 @@ export default function UserCheckoutPage() {
                             value={formData.phone}
                             onChange={handleInputChange}
                             className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            maxLength={10}
+                            pattern="[0-9]{10}"
+                            inputMode="numeric"
                           />
                         </div>
                         <p className="mt-2 text-sm text-gray-400">
@@ -564,10 +573,7 @@ export default function UserCheckoutPage() {
                       <span>Subtotal</span>
                       <span>₹{subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-gray-300">
-                      <span>Tax (18%)</span>
-                      <span>₹{tax.toFixed(2)}</span>
-                    </div>
+                    
                     <div className="flex justify-between text-gray-300">
                       <span>Shipping</span>
                       <span className="text-emerald-400">Free</span>

@@ -346,7 +346,7 @@ export default function UserOrders() {
                               <AnimatedButton
                                 variant="primary"
                                 size="sm"
-                                onClick={() => navigate('/user/store')}
+                                onClick={() => navigate(`/user/store/`)}
                                 icon={<ShoppingBagIcon className="w-4 h-4" />}
                               >
                                 Buy Again

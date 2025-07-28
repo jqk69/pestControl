@@ -21,3 +21,5 @@ PyMySQL
 scikit-surprise
 torch
 sentence-transformers
+langchain-groq
+langgraph

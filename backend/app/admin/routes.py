@@ -1,9 +1,12 @@
 from flask import request, jsonify, Blueprint,g
 from app.db import create_connection
 from ..utils.verify_token import token_required
+from ..utils.grok_model import CreateMessage
 import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import re
+from app.models.agent.blog_agent import run_weekly_blog_pipeline
 
 admin_bp=Blueprint("admin",__name__,url_prefix="/admin")
 
@@ -727,6 +730,7 @@ def get_booking_history():
         b.location_lat,
         b.location_lng,
         b.requirements,
+        b.sentiment,
         b.created_at as booking_created_at,
         b.updated_at as booking_updated_at,
 
@@ -878,11 +882,12 @@ def get_reports():
         # Total Revenue from Payments
         cursor.execute("""SELECT 
     (
-        SELECT COALESCE(SUM(amount), 0)
-        FROM payments
-        WHERE status = 'success'
-        AND YEAR(created_at) = YEAR(CURRENT_DATE)
-        AND MONTH(created_at) = MONTH(CURRENT_DATE)
+        SELECT COALESCE(SUM(s.price), 0)
+        FROM bookings b
+        JOIN services s ON b.service_id = s.service_id
+        WHERE b.status = 'completed'
+        AND YEAR(b.booking_date) = YEAR(CURRENT_DATE)
+        AND MONTH(b.booking_date) = MONTH(CURRENT_DATE)
     ) +
     (
         SELECT COALESCE(SUM(c.quantity * s.price), 0)
@@ -892,6 +897,7 @@ def get_reports():
         AND YEAR(c.updated_at) = YEAR(CURRENT_DATE)
         AND MONTH(c.updated_at) = MONTH(CURRENT_DATE)
     ) AS totalRevenue;
+
 
         """)
         total_revenue = float(cursor.fetchone()['totalRevenue'])
@@ -920,13 +926,15 @@ def get_reports():
         completed_bookings = int(cursor.fetchone()['completedBookings'])
 
         # Monthly Revenue Using Service Prices via Bookings
-        cursor.execute("""SELECT 
+        cursor.execute("""
+SELECT 
 (
-    SELECT COALESCE(SUM(amount), 0)
-    FROM payments
-    WHERE status = 'success'
-    AND YEAR(created_at) = YEAR(CURRENT_DATE)
-    AND MONTH(created_at) = MONTH(CURRENT_DATE)
+    SELECT COALESCE(SUM(s.price), 0)
+    FROM bookings b
+    JOIN services s ON b.service_id = s.service_id
+    WHERE b.status = 'completed'
+    AND YEAR(b.booking_date) = YEAR(CURRENT_DATE)
+    AND MONTH(b.booking_date) = MONTH(CURRENT_DATE)
 ) +
 (
     SELECT COALESCE(SUM(c.quantity * s.price), 0)
@@ -935,28 +943,32 @@ def get_reports():
     WHERE c.status IN ('ordered', 'shipped', 'delivered')
     AND YEAR(c.updated_at) = YEAR(CURRENT_DATE)
     AND MONTH(c.updated_at) = MONTH(CURRENT_DATE)
-) AS revenue""")
+) AS revenue
+""")
+
         current_revenue = float(cursor.fetchone()['revenue'])
 
         # Previous Month Revenue (also from services via bookings)
         cursor.execute("""
-        SELECT 
-        (
-            SELECT COALESCE(SUM(amount), 0)
-            FROM payments
-            WHERE status = 'success'
-            AND YEAR(created_at) = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
-            AND MONTH(created_at) = MONTH(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
-        ) +
-        (
-            SELECT COALESCE(SUM(c.quantity * s.price), 0)
-            FROM cart c
-            JOIN store s ON c.product_id = s.id
-            WHERE c.status IN ('ordered', 'shipped', 'delivered')
-            AND YEAR(c.updated_at) = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
-            AND MONTH(c.updated_at) = MONTH(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
-        ) AS revenue
-        """)
+    SELECT 
+    (
+        SELECT COALESCE(SUM(s.price), 0)
+        FROM bookings b
+        JOIN services s ON b.service_id = s.service_id
+        WHERE b.status = 'completed'
+        AND YEAR(b.booking_date) = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+        AND MONTH(b.booking_date) = MONTH(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+    ) +
+    (
+        SELECT COALESCE(SUM(c.quantity * s.price), 0)
+        FROM cart c
+        JOIN store s ON c.product_id = s.id
+        WHERE c.status IN ('ordered', 'shipped', 'delivered')
+        AND YEAR(c.updated_at) = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+        AND MONTH(c.updated_at) = MONTH(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+    ) AS revenue
+    """)
+
         last_revenue = float(cursor.fetchone()['revenue'])
 
 
@@ -1015,7 +1027,7 @@ def get_reports():
                 'monthlyGrowth': monthly_growth,
                 'topServices': top_services,
                 'recentActivity': recent_activity,
-                'monthlyServiceBasedIncome': current_revenue  # NEW FIELD
+                'monthlyServiceBasedIncome': current_revenue 
             }
         })
 
@@ -1026,3 +1038,167 @@ def get_reports():
     finally:
         cursor.close()
         connection.close()
+@admin_bp.route("/generate-report", methods=["POST"])
+def generate_report():
+    data = request.get_json()
+    question = data.get("question", "").strip()
+
+    if not question:
+        return jsonify({"error": "Please provide a question."}), 400
+    prompt=""" You are an expert MySQL query generator.  
+            Only output a single valid and optimized SELECT SQL query.  
+
+            Do NOT include any comments, explanations, or additional text.  
+            Only output raw SQL starting with the SELECT statement.  
+
+            Schema:  
+            blog_posts(id, title, content, created_at, author_id) -- blog - details  
+            bookings(booking_id, user_id, service_id, booking_date, location_lat, location_lng, requirements, status, created_at, updated_at) -- service - booking details -- status can be pending,confirmed,completed,cancelled
+            booking_technicians(id, booking_id, technician_id, assigned_at) -- technician details related to bookings  
+            cart(cart_id, user_id, product_id, quantity, status, delivery_address, phone, order_date, updated_at) -- products order details  status can be -- in_cart,ordered,shipped,delivered,cancelled
+            notifications(id, user_type, message, created_at, user_id) -- different notifications  
+            otp_verifications(id, user_id, otp_code, created_at, expires_at) -- otp for service  
+            payments(payment_id, booking_id, razorpay_payment_id, amount, status, created_at) -- razorpay details on service payments  
+            salary(id, technician_id, amount, month, year, issued_at) -- technician salaries  
+            store(id, name, description, price, category, image_path, inventory_amount) -- pest control product store data  
+            services(service_id, service_type, category, name, technicians_needed, price, description, duration_minutes, pest_type) -- service related info  
+            technicians(technician_id, skills, experience_years, salary, last_job) -- additional info for technicians  
+            technician_unavailable(id, technician_id, start_datetime, end_datetime, reason, created_at) -- technician unavailability details (could be job or leave)  
+            users(id, username, password, role, created_at, name, phone, email, status) -- user details    """
+
+    # Step 1: Get raw SQL from LLM
+    content = CreateMessage(question,prompt)
+    raw_sql=content.content
+    print(raw_sql)
+    # Step 2: Extract SELECT query from any text
+    match = re.search(r"(?i)select\s.+", raw_sql.strip(), re.DOTALL)
+    if not match:
+        return jsonify({'error': 'Only SELECT queries are allowed.'}), 500
+
+    sql = match.group(0).strip()
+    sql_lower = sql.lower()
+
+    # Step 3: Block unsafe keywords and patterns
+    unsafe_keywords = ["⚠️", "drop", "delete", "update", "insert", "--", "/*", "alter"]
+    if any(bad in sql_lower for bad in unsafe_keywords):
+        return jsonify({"message":"dangerous queries detected"})
+
+    semicolon_count = sql.count(";")
+    if semicolon_count > 1 or (semicolon_count == 1 and not sql.strip().endswith(";")):
+        pass
+
+    # Strip trailing semicolon safely
+    sql = sql.rstrip(";").strip()
+
+    # Step 4: Verify allowed tables only
+    allowed_tables = {
+        "bookings", "booking_technicians", "cart", "notifications", "payments",
+        "services", "store", "technicians", "technician_unavailable", "users"
+    }
+    used_tables = set(re.findall(r'from\s+(\w+)|join\s+(\w+)', sql_lower))
+    used_tables = {tbl for pair in used_tables for tbl in pair if tbl}
+
+    if not used_tables.intersection(allowed_tables):
+        return jsonify({'error': 'SQL must be a SELECT query targeting allowed tables.'}), 500
+
+    # Step 5: Execute query
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        results = [dict(zip(columns, row)) for row in rows]
+        print(results)
+
+        return jsonify({
+            'sql': sql,
+            'results': results,
+            'message': 'Query executed successfully.'
+        })
+
+    except Exception as e:
+        print("Database Error:", str(e))
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+    finally:
+        if conn:
+            conn.close() 
+@admin_bp.route('/run-weekly-blog', methods=['POST'])
+def run_weekly_blog():
+    try:
+        run_weekly_blog_pipeline()
+        return jsonify({'status': 'success', 'message': 'Blog generated and saved successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+@token_required(role='admin')
+@admin_bp.route('/stats', methods=['GET'])
+def get_admin_stats():
+    connection = create_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    if connection is None:
+        return jsonify({"message": "Server not found"}), 404
+
+    try:
+        cursor.execute("SELECT COUNT(*) AS total_orders FROM bookings")
+        total_orders = cursor.fetchone()['total_orders']
+
+        cursor.execute("SELECT COUNT(*) AS pending_requests FROM bookings WHERE status = 'pending'")
+        pending_requests = cursor.fetchone()['pending_requests']
+
+        cursor.execute("SELECT COUNT(*) AS total_products FROM store")
+        total_products = cursor.fetchone()['total_products']
+
+        cursor.execute("SELECT COUNT(*) AS total_services FROM services")
+        total_services = cursor.fetchone()['total_services']
+
+        return jsonify({
+            "total_orders": total_orders,
+            "pending_requests": pending_requests,
+            "total_products": total_products,
+            "total_services": total_services
+        })
+
+    except Exception as e:
+        return jsonify({"message": "Something went wrong", "error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+@admin_bp.route('/booking-locations', methods=['GET'])
+@token_required(role="admin")
+def get_all_booking_locations():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        query = """
+            SELECT 
+                b.booking_id, 
+                b.location_lat, 
+                b.location_lng, 
+                b.status,
+                s.pest_type
+            FROM bookings b
+            LEFT JOIN services s ON b.service_id = s.service_id
+            WHERE b.location_lat IS NOT NULL AND b.location_lng IS NOT NULL
+        """
+        cursor.execute(query)
+        bookings = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "locations": bookings
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "Error fetching locations",
+            "error": str(e)
+        }), 500
+
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()

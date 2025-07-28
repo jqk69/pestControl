@@ -123,9 +123,7 @@ export default function UserPayment() {
       const token = sessionStorage.getItem('token');
       const { amount } = bookingDetails;
 
-      // Calculate the total amount with tax
-      const taxAmount = amount * 0.18;
-      const totalAmount = amount + taxAmount;
+      const totalAmount = amount 
 
       const options = {
         key: rpzkey,
@@ -256,8 +254,7 @@ export default function UserPayment() {
 
   // Calculate amounts
   const baseAmount = parseFloat(bookingDetails.amount || 0);
-  const taxAmount = baseAmount * 0.18;
-  const totalAmount = baseAmount + taxAmount;
+  const totalAmount = baseAmount 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 relative overflow-hidden">
@@ -359,16 +356,6 @@ export default function UserPayment() {
                     <div className="flex items-start gap-3">
                       <CalendarDaysIcon className="w-5 h-5 text-emerald-400 mt-0.5" />
                       <div>
-                        <p className="text-gray-400 text-sm">Date & Time</p>
-                        <p className="text-white">
-                          {bookingDetails.booking_date ? new Date(bookingDetails.booking_date).toLocaleString() : 'Not specified'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <UserIcon className="w-5 h-5 text-emerald-400 mt-0.5" />
-                      <div>
                         <p className="text-gray-400 text-sm">Customer</p>
                         <p className="text-white">
                           {sessionStorage.getItem('username') || 'Customer'}
@@ -386,17 +373,7 @@ export default function UserPayment() {
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-3">
-                      <MapPinIcon className="w-5 h-5 text-emerald-400 mt-0.5" />
-                      <div>
-                        <p className="text-gray-400 text-sm">Location</p>
-                        <p className="text-white">
-                          {bookingDetails.location_lat && bookingDetails.location_lng 
-                            ? 'Selected on map' 
-                            : 'Not specified'}
-                        </p>
-                      </div>
-                    </div>
+                   
                   </div>
                 </div>
                 
@@ -451,10 +428,6 @@ export default function UserPayment() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Service Fee</span>
                     <span className="text-white">₹{baseAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Tax (18% GST)</span>
-                    <span className="text-white">₹{taxAmount.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 mt-3">
                     <div className="flex justify-between items-center">

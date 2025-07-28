@@ -1,6 +1,5 @@
 from flask import request, jsonify, Blueprint, current_app,g
 from app.db import create_connection
-from app.models import generate_sql
 from ..utils.verify_token import token_required
 import os
 from datetime import datetime, timedelta
@@ -73,11 +72,8 @@ def home():
 
         # 5. Earnings summary (sum of payment amounts)
         cursor.execute("""
-            SELECT SUM(p.amount) as total_earned
-            FROM payments p
-            JOIN bookings b ON p.booking_id = b.booking_id
-            JOIN booking_technicians bt ON b.booking_id = bt.booking_id
-            WHERE bt.technician_id = %s AND b.status = 'completed'
+            SELECT SUM(s.salary) as total_earned
+            FROM salary s where technician_id =%s
         """, (technician_id,))
         earnings = cursor.fetchone()
 
@@ -134,12 +130,20 @@ def get_assigned_services():
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute("""
-            SELECT b.booking_id, s.name AS service_name, b.booking_date, b.status, b.location_lat, b.location_lng
-            FROM bookings b
-            JOIN booking_technicians bt ON b.booking_id = bt.booking_id
-            JOIN services s ON b.service_id = s.service_id
-            WHERE bt.technician_id = %s
-            ORDER BY b.booking_date ASC
+                    SELECT 
+                        b.booking_id, 
+                        s.name AS service_name, 
+                        b.booking_date, 
+                        b.status, 
+                        b.location_lat, 
+                        b.location_lng,
+                        u.username
+                    FROM bookings b
+                    JOIN booking_technicians bt ON b.booking_id = bt.booking_id
+                    JOIN services s ON b.service_id = s.service_id
+                    JOIN users u ON b.user_id = u.id
+                    WHERE bt.technician_id = %s
+                    ORDER BY b.booking_date ASC;
         """, (technician_id,))
         assigned_services = cursor.fetchall()
 

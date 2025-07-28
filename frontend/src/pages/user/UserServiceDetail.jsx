@@ -188,7 +188,10 @@ export default function UserServiceDetail() {
     }
   };
 
-  const minDate = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split('T')[0];
+
   const timeSlots = [];
   for (let hour = 9; hour <= 18; hour++) {
     timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);

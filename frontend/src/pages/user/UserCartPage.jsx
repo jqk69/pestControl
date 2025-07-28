@@ -419,14 +419,11 @@ export default function UserCartPage() {
                       <span>Shipping</span>
                       <span className="text-emerald-400">Free</span>
                     </div>
-                    <div className="flex justify-between text-gray-300">
-                      <span>Tax</span>
-                      <span>₹{(total * 0.18).toFixed(2)}</span>
-                    </div>
+                    
                     <div className="border-t border-white/20 pt-3">
                       <div className="flex justify-between items-center">
                         <span className="text-xl font-bold text-white">Total</span>
-                        <span className="text-2xl font-bold text-blue-400">₹{(total * 1.18).toFixed(2)}</span>
+                        <span className="text-2xl font-bold text-blue-400">₹{(total).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

@@ -84,6 +84,7 @@ const AdminDashboard = () => {
     };
 
     fetchUsers();
+    fetchAdminStats();
   }, []);
 
   const updateDashboardStats = (userData) => {
@@ -91,12 +92,28 @@ const AdminDashboard = () => {
       totalUsers: userData.length,
       technicians: userData.filter(u => u.role === 'technician').length,
       regularUsers: userData.filter(u => u.role === 'user').length,
-      activeUsers: userData.filter(u => u.status === 'active').length,
-      pendingRequests: Math.floor(Math.random() * 10), // Mock data
-      totalOrders: Math.floor(Math.random() * 100) // Mock data
+      activeUsers: userData.filter(u => u.status === 'active').length
     });
   };
-
+  const fetchAdminStats = async () => {
+  try {
+    const res = await axios.get("http://127.0.0.1:5000/admin/stats",{
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem("token")}`
+      }
+    });
+    const data = res.data;
+    setDashboardStats(prev => ({
+      ...prev,
+      pendingRequests: data.pending_requests,
+      totalOrders: data.total_orders,
+      totalProducts: data.total_products,
+      totalServices: data.total_services
+    }));
+  } catch (error) {
+    console.error("Failed to fetch stats", error);
+  }
+}
   useEffect(() => {
     let filtered = users;
 
@@ -183,13 +200,7 @@ const AdminDashboard = () => {
               <p className="text-gray-300 mt-2">Manage users, services, and system settings</p>
             </div>
             <div className="flex items-center gap-4">
-              <AnimatedButton
-                variant="blue"
-                icon={<UserPlusIcon className="w-5 h-5" />}
-                onClick={() => navigate('/admin/users/new')}
-              >
-                Add User
-              </AnimatedButton>
+              
             </div>
           </div>
         </GlassCard>
@@ -412,14 +423,6 @@ const AdminDashboard = () => {
                                 icon={<EyeIcon className="w-4 h-4" />}
                               >
                                 View
-                              </AnimatedButton>
-                              <AnimatedButton
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(user.id)}
-                                icon={<PencilIcon className="w-4 h-4" />}
-                              >
-                                Edit
                               </AnimatedButton>
                               <AnimatedButton
                                 variant="danger"

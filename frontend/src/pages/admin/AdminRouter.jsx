@@ -17,6 +17,7 @@ import AdminReports from './AdminReports'
 import AdminLeaveManagement from './AdminLeaveManagement'
 import AdminBlog from './AdminBlog'
 import AdminViewBlog from './AdminBlogView'
+import AdminHeatmap from './AdminHeatmap'
 
 
 export default function AdminRouter() {
@@ -62,6 +63,7 @@ export default function AdminRouter() {
           <Route path='leave-management' element={<AdminLeaveManagement/>}/>
           <Route path='blogs' element={<AdminBlog></AdminBlog>}/>
           <Route path='blogs/:id' element={<AdminViewBlog/>}/>
+          <Route path='heatmap' element={<AdminHeatmap/>}/>
         </Route>
     </Routes>
     </>
